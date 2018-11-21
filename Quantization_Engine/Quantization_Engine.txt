@@ -1,0 +1,653 @@
+// Quantization_Engine.cpp : Defines the entry point for the console application.
+//
+
+#define ARMA_DONT_USE_WRAPPER
+#include <armadillo>
+#define _USE_MATH_DEFINES
+#include <cmath>  
+#include "stdafx.h"
+#include <iostream>
+#include "time.h"
+#include "Eigen/Dense"
+#include <chrono>
+#include "TriangleTile.h"
+#include "Clusters.h"
+#include "Particle_Dynamics.h"
+
+using namespace std;
+using namespace Eigen;
+using namespace chrono;
+
+int main()
+{
+	srand(time(NULL));
+
+	const bool timing = false;
+	const long Number_Points = 2;
+	const long Dimension = 3;
+	const long Number_Pairs = Number_Points*(Number_Points - 1) / 2;
+
+	const long Number_Scale_Bins = 1;
+	const long Total_Time = 10;
+
+	double* Masses = new double[Number_Points];
+	for (int i = 0; i < Number_Points; i++)
+	{
+		Masses[i] = 1.0;
+	}
+	double** initial_Positions = new double*[Number_Points];
+	double** initial_Velocities = new double*[Number_Points];
+
+	double** V_Positions = new double*[Number_Points];
+	double** B_Positions = new double*[Number_Points];
+	double** RK_Positions = new double*[Number_Points];
+	double** V_Position_Error = new double*[Number_Points];
+	double** B_Position_Error = new double*[Number_Points];
+	double** RK_Position_Error = new double*[Number_Points];
+	double** V_Position_Error_Actual = new double*[Number_Points];
+	double** B_Position_Error_Actual = new double*[Number_Points];
+	double** RK_Position_Error_Actual = new double*[Number_Points];
+	for (int i = 0; i < Number_Points; i++)
+	{
+		initial_Positions[i] = new double[Dimension];
+
+		V_Positions[i] = new double[Dimension];
+		B_Positions[i] = new double[Dimension];
+		RK_Positions[i] = new double[Dimension];
+		V_Position_Error[i] = new double[Dimension];
+		B_Position_Error[i] = new double[Dimension];
+		RK_Position_Error[i] = new double[Dimension];
+		V_Position_Error_Actual[i] = new double[Dimension];
+		B_Position_Error_Actual[i] = new double[Dimension];
+		RK_Position_Error_Actual[i] = new double[Dimension];
+		for (int j = 0; j < Dimension; j++)
+		{
+			initial_Positions[i][j] = 10.0 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX) - 5.0;
+
+			V_Positions[i][j] = initial_Positions[i][j];
+			B_Positions[i][j] = initial_Positions[i][j];
+			RK_Positions[i][j] = initial_Positions[i][j];
+			RK_Position_Error[i][j] = 0;
+		}
+	}
+
+	double** V_Velocities = new double*[Number_Points];
+	double** B_Velocities = new double*[Number_Points];
+	double** RK_Velocities = new double*[Number_Points];
+	double** V_Velocity_Error = new double*[Number_Points];
+	double** B_Velocity_Error = new double*[Number_Points];
+	double** RK_Velocity_Error = new double*[Number_Points];
+	double** V_Velocity_Error_Actual = new double*[Number_Points];
+	double** B_Velocity_Error_Actual = new double*[Number_Points];
+	double** RK_Velocity_Error_Actual = new double*[Number_Points];
+	for (int i = 0; i < Number_Points; i++)
+	{
+		initial_Velocities[i] = new double[Dimension];
+
+		V_Velocities[i] = new double[Dimension];
+		B_Velocities[i] = new double[Dimension];
+		RK_Velocities[i] = new double[Dimension];
+		V_Velocity_Error[i] = new double[Dimension];
+		B_Velocity_Error[i] = new double[Dimension];
+		RK_Velocity_Error[i] = new double[Dimension];
+		V_Velocity_Error_Actual[i] = new double[Dimension];
+		B_Velocity_Error_Actual[i] = new double[Dimension];
+		RK_Velocity_Error_Actual[i] = new double[Dimension];
+		for (int j = 0; j < Dimension; j++)
+		{			 
+			 initial_Velocities[i][j] = 2.0 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX) - 1.0;
+			 V_Velocities[i][j] = initial_Velocities[i][j];
+			 B_Velocities[i][j] = initial_Velocities[i][j];
+			 RK_Velocities[i][j] = initial_Velocities[i][j];
+			 RK_Velocity_Error[i][j] = 0;
+		}
+	}
+	
+	double *RK_Total_Momentum, *B_Total_Momentum, *V_Total_Momentum;
+	double RK_Total_Energy, B_Total_Energy, V_Total_Energy;
+	long long RK_time = 0, B_time = 0, V_time = 0;
+
+	// Calculating Forces & Power
+	Gravitation Gravitional_Force;
+	Spring Spring_Force = Spring();
+	double** Force_Vector = new double*[Number_Points];
+	double*** Gravitational_Force_Operator = Force_Operator(Gravitional_Force.Force, initial_Positions, Number_Points, Dimension, Force_Vector);
+
+	double* Power_Vector = Vector_Product(initial_Velocities, Force_Vector, Number_Points, Dimension);
+	// Calculating Particle Dynamics
+
+	// Total Energy & Momentum Calculation
+	double* initial_Total_Momentum = Momentum(initial_Velocities, Masses, Number_Points, Dimension);
+
+	double initial_Total_Energy = Potential_Energy(Spring_Force.Energy, initial_Positions, Number_Points, Dimension)
+		+ Kinetic_Energy(initial_Velocities, Masses, Number_Points, Dimension);
+	
+	//
+
+	// Calculation Eigen Structure
+	Distance_Struct Distances = Distance_Matrix(Euclidean_Distance, initial_Positions, Number_Points, Dimension);
+
+	//double Min_Distance = Distances.Vector[0].Distance;
+	//double Max_Distance = Distances.Vector[Number_Pairs-1].Distance;
+	
+	// Hierarchical Clustering Begins
+
+	long long clustering_time = 0;
+	//auto start_time1 = high_resolution_clock::now();
+
+	Clusters Hierarchical_Clusters = Clusters(Distances);
+
+	//auto elapsed_time1 = high_resolution_clock::now() - start_time1;
+	//clustering_time = duration_cast<microseconds>(elapsed_time1).count();
+
+	// Hierarchical Clustering Ends
+
+	VectorXd Vac = VectorXd::Constant(Number_Points, 1);
+	MatrixXd Correlation_Operator[Number_Scale_Bins];
+	MatrixXd Mass_Operator[Number_Scale_Bins];
+	MatrixXd Laplacian[Number_Scale_Bins];
+
+	VectorXd** Energy_Vector = new VectorXd*[Total_Time];
+	for (int t = 0; t < Total_Time; t++)
+		Energy_Vector[t] = new VectorXd[Number_Scale_Bins];
+
+	MatrixXd Orthonormal_Transformation[Number_Scale_Bins];
+
+	SelfAdjointEigenSolver<MatrixXd> Laplacian_Eigenstructure;
+	
+	long long eigen_time = 0;
+	for (long Scale_Counter = 0; Scale_Counter < Number_Scale_Bins; Scale_Counter++)
+	{
+		//        double Scale_Distance = Scale_Counter*Max_Distance/Number_Scale_Bins;
+		double Scale_Distance = (Hierarchical_Clusters.Max_Vacuum_Scales + Hierarchical_Clusters.Min_Saturation_Scales) / 2;
+
+		Correlation_Operator[Scale_Counter] = (Distances.Operator.array() < Scale_Distance).cast<double>();
+
+		Mass_Operator[Scale_Counter] = (Correlation_Operator[Scale_Counter] * Vac).asDiagonal();
+		Laplacian[Scale_Counter] = Mass_Operator[Scale_Counter] - Correlation_Operator[Scale_Counter];
+		
+		//auto start_time1 = high_resolution_clock::now();
+
+		Laplacian_Eigenstructure.compute(Laplacian[Scale_Counter]);
+
+		//auto elapsed_time1 = high_resolution_clock::now() - start_time1;
+		//eigen_time = duration_cast<microseconds>(elapsed_time1).count();
+
+		Energy_Vector[0][Scale_Counter] = Laplacian_Eigenstructure.eigenvalues().cwiseAbs();
+		Orthonormal_Transformation[Scale_Counter] = Laplacian_Eigenstructure.eigenvectors().transpose();
+	}
+
+	// Particle Dynamics :
+
+	Simulation_Method simulation = Simulation_Method::V;
+	double t = 0.05;
+	long Num_Steps = 1;
+
+	// Runge-Kutta Test
+	if ((simulation == Simulation_Method::RK45) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		//auto start_time_P = high_resolution_clock::now();
+
+		Runge_Kutta_5th(Spring_Force.Force, RK_Positions, RK_Velocities, Masses, t, Number_Points, Dimension, Num_Steps, RK_Position_Error, RK_Velocity_Error);
+
+		// Total Energy & Momentum Calculation
+		RK_Total_Momentum = Momentum(RK_Velocities, Masses, Number_Points, Dimension);
+
+		RK_Total_Energy = Potential_Energy(Spring_Force.Energy, RK_Positions, Number_Points, Dimension)
+			+ Kinetic_Energy(RK_Velocities, Masses, Number_Points, Dimension);
+
+		//auto elapsed_time_P = high_resolution_clock::now() - start_time_P;
+		//RK_time = duration_cast<microseconds>(elapsed_time_P).count();
+
+		if (Number_Points == 2)
+			Simulation_Test_Spring1(initial_Positions, initial_Velocities, RK_Positions, RK_Velocities, Masses, t, Dimension, RK_Position_Error_Actual, RK_Velocity_Error_Actual);
+	}
+	// Beeman Test
+	if ((simulation == Simulation_Method::B) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		//auto start_time_B = high_resolution_clock::now();
+
+		// Copying Positions & Velocities for error calculation
+		double **_B_Positions = new double*[Number_Points], **_B_Velocities = new double*[Number_Points];
+
+		for (int index_r = 0; index_r < Number_Points; index_r++)
+		{
+			_B_Positions[index_r] = new double[Dimension];
+			_B_Velocities[index_r] = new double[Dimension];
+			for (int index_c = 0; index_c < Dimension; index_c++)
+			{
+				_B_Positions[index_r][index_c] = B_Positions[index_r][index_c];
+				_B_Velocities[index_r][index_c] = B_Velocities[index_r][index_c];
+			}
+		}
+		// Beeman Method
+		Beeman(Spring_Force.Force, _B_Positions, _B_Velocities, Masses, t, Number_Points, Dimension, Num_Steps / 2);
+		Beeman(Spring_Force.Force, B_Positions, B_Velocities, Masses, t, Number_Points, Dimension, Num_Steps);
+		//
+		// Calculating error for Positions & Velocities 
+		for (int index_r = 0; index_r < Number_Points; index_r++)
+		{
+			for (int index_c = 0; index_c < Dimension; index_c++)
+			{
+				B_Position_Error[index_r][index_c] = abs(_B_Positions[index_r][index_c] - B_Positions[index_r][index_c]);
+				B_Velocity_Error[index_r][index_c] = abs(_B_Velocities[index_r][index_c] - B_Velocities[index_r][index_c]);
+			}
+		}
+		//
+		// Total Energy & Momentum Calculation
+		B_Total_Momentum = Momentum(B_Velocities, Masses, Number_Points, Dimension);
+
+		B_Total_Energy = Potential_Energy(Spring_Force.Energy, B_Positions, Number_Points, Dimension)
+			+ Kinetic_Energy(B_Velocities, Masses, Number_Points, Dimension);
+
+		//auto elapsed_time_B = high_resolution_clock::now() - start_time_B;
+		//B_time = duration_cast<microseconds>(elapsed_time_B).count();
+
+		if (Number_Points == 2)
+			Simulation_Test_Spring1(initial_Positions, initial_Velocities, B_Positions, B_Velocities, Masses, t, Dimension, B_Position_Error_Actual, B_Velocity_Error_Actual);
+	}
+	// Verlet Test
+	if ((simulation == Simulation_Method::V) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::All))
+	{
+		//auto start_time_V = high_resolution_clock::now();
+
+		// Copying Positions & Velocities for error calculation
+		double **_V_Positions = new double*[Number_Points], **_V_Velocities = new double*[Number_Points];
+
+		for (int index_r = 0; index_r < Number_Points; index_r++)
+		{
+			_V_Positions[index_r] = new double[Dimension];
+			_V_Velocities[index_r] = new double[Dimension];
+			for (int index_c = 0; index_c < Dimension; index_c++)
+			{
+				_V_Positions[index_r][index_c] = V_Positions[index_r][index_c];
+				_V_Velocities[index_r][index_c] = V_Velocities[index_r][index_c];
+			}
+		}
+		//
+		// Verlet Method
+		Verlet(Spring_Force.Force, _V_Positions, _V_Velocities, Masses, t, Number_Points, Dimension, Num_Steps / 2);
+		Verlet(Spring_Force.Force, V_Positions, V_Velocities, Masses, t, Number_Points, Dimension, Num_Steps);
+		//
+		// Calculating error for Positions & Velocities 
+		for (int index_r = 0; index_r < Number_Points; index_r++)
+		{
+			for (int index_c = 0; index_c < Dimension; index_c++)
+			{
+				V_Position_Error[index_r][index_c] = abs(_V_Positions[index_r][index_c] - V_Positions[index_r][index_c]);
+				V_Velocity_Error[index_r][index_c] = abs(_V_Velocities[index_r][index_c] - V_Velocities[index_r][index_c]);
+			}
+		}
+		//
+		// Total Energy & Momentum Calculation
+		V_Total_Momentum = Momentum(V_Velocities, Masses, Number_Points, Dimension);
+
+		V_Total_Energy = Potential_Energy(Spring_Force.Energy, V_Positions, Number_Points, Dimension)
+			+ Kinetic_Energy(V_Velocities, Masses, Number_Points, Dimension);
+
+		//auto elapsed_time_V = high_resolution_clock::now() - start_time_V;
+		//V_time = duration_cast<microseconds>(elapsed_time_V).count();
+
+		if (Number_Points == 2)
+			Simulation_Test_Spring1(initial_Positions, initial_Velocities, V_Positions, V_Velocities, Masses, t, Dimension, V_Position_Error_Actual, V_Velocity_Error_Actual);
+	}
+	//
+
+	// Finding "Wave" solutions to a Triangulation of a 5 layer Hexagon
+	int Dome_Dimension = 2;
+	long long eigen_time2 = 0;
+	//auto start_time2 = high_resolution_clock::now();
+
+	TriangleTile Hexagon5 = TriangleTile();
+	Distance_Struct Hub_Distances = Distance_Matrix(Euclidean_Distance, Hexagon5.positions, Hexagon5.Num_Points, Dome_Dimension);
+	double Scale_Distance = 1.5;
+
+	VectorXd Vac_Hexagon = VectorXd::Constant(Hexagon5.Num_Points, 1);
+	MatrixXd Correlation_Operator_Hexagon5 = (Hub_Distances.Operator.array() < Scale_Distance).cast<double>();
+	MatrixXd Mass_Operator_Hexagon5 = (Correlation_Operator_Hexagon5 * Vac_Hexagon).asDiagonal();
+	MatrixXd Laplacian_Hexagon5 = Mass_Operator_Hexagon5 - Correlation_Operator_Hexagon5;
+
+	Laplacian_Eigenstructure.compute(Laplacian_Hexagon5);
+
+	VectorXd Energy_Vector_Hexagon5 = Laplacian_Eigenstructure.eigenvalues().cwiseAbs();
+	MatrixXd Orthonormal_Transformation_Hexagon5 = Laplacian_Eigenstructure.eigenvectors().transpose();
+
+	//auto elapsed_time2 = high_resolution_clock::now() - start_time2;
+	//eigen_time2 = duration_cast<microseconds>(elapsed_time2).count();
+	//
+
+	//std::cout << "RK_Positions :" << RK_Positions << endl;
+	//std::cout << "Distance Matrix : " << Distances.Operator << endl;
+	std::cout << endl;
+	std::cout << "Number of Points : " << Number_Points << endl;
+	std::cout << "dimension : " << Dimension << endl;
+	//std::cout << "Max : " << Max_Distance << endl;
+	//std::cout << "Min : " << Min_Distance << endl;
+	std::cout << endl;
+	//std::cout << "correlation operator : " << correlation_operator[number_scale_bins/2] << endl;
+	//std::cout << "mass operator : " << mass_operator[number_scale_bins/2] << endl;
+	std::cout << "Laplacian Operator : " << endl;
+	//std::cout << Laplacian[0] << endl;
+	std::cout << endl;
+	//std::cout << "Energies : " << Energy_Vector[Number_Scale_Bins / 2] << endl;
+	std::cout << "Dendogram: " << endl;
+	for (int i_points = 0; i_points < Number_Points; i_points++)
+	{
+		//std::cout << Hierarchical_Clusters.Dendogram[i_points].Slice << " ,  " << Hierarchical_Clusters.Dendogram[i_points].Scale << endl;
+	}
+	std::cout << endl;
+	std::cout << "Scale Invariant Transformation : " << endl;
+	//std::cout << Hierarchical_Clusters.Orthogonal_Transformation << endl;
+	std::cout << endl;
+	//std::cout << "Orthonormality Test : " << endl;
+	//std::cout << Clusters * Clusters.transpose() << endl;
+	//std::cout << endl;
+	//std::cout << Clusters.transpose() * Clusters << endl;
+	//std::cout << endl;
+	std::cout << "Dual Dendogram: " << endl;
+	for (int i_points = 0; i_points < Number_Points; i_points++)
+	{
+		//std::cout << Hierarchical_Clusters.Dendogram_Dual[i_points].Slice << " ,  " << Hierarchical_Clusters.Dendogram_Dual[i_points].Scale << endl;
+	}
+	std::cout << endl;
+	std::cout << "Dual Scale Invariant Transformation : " << endl;
+	//std::cout << Hierarchical_Clusters.Orthogonal_Transformation_Dual << endl;
+	std::cout << endl;
+	//std::cout << "Orthonormality Test : " << endl;
+	//std::cout << Clusters_Dual * Clusters_Dual.transpose() << endl;
+	//std::cout << endl;
+	//std::cout << Clusters_Dual.transpose() * Clusters_Dual << endl;
+	//std::cout << endl;
+
+	std::cout << "Transformation from Median Scale to Original Model : " << endl;
+	//std::cout << Orthonormal_Transformation[0] * Hierarchical_Clusters.Orthogonal_Transformation.transpose() << endl;
+	std::cout << endl;
+	std::cout << "Transformation from Median Scale to Dual Model : " << endl;
+	//std::cout << Orthonormal_Transformation[0] * Hierarchical_Clusters.Orthogonal_Transformation_Dual.transpose() << endl;
+
+	//std::cout << "Eigenvectors of median scale : " << endl;
+	//for (int i_points = (Number_Points - 1); i_points >= 0; i_points++)
+	//{
+	//	std::cout << Orthonormal_Transformation[0].row(i_points) << " ,  " << Laplacian_Eigenstructure.eigenvalues()(i_points) << endl;
+	//}
+	std::cout << endl;
+	std::cout << "Hexagon5, Num Points : " << Hexagon5.Num_Points << endl;
+	std::cout << "Hexagon5, Laplacian : " << endl;
+	std::cout << Laplacian_Hexagon5 << endl;	
+	std::cout << "Hexagon5, Waves : " << endl;
+	std::cout << Orthonormal_Transformation_Hexagon5 << endl;
+	std::cout << "Hexagon5, Energies : " << endl;
+	std::cout << Energy_Vector_Hexagon5 << endl;
+	
+	std::cout << "Initial Positions : " << endl;
+	for (int i_points = 0; i_points < Number_Points; i_points++)
+	{
+		std::cout << initial_Positions[i_points][0] << " ,  " << initial_Positions[i_points][1] << endl;
+	}
+	std::cout << endl;
+
+	std::cout << "Initial Velocities : " << endl;
+	for (int i_points = 0; i_points < Number_Points; i_points++)
+	{
+		std::cout << initial_Velocities[i_points][0] << " ,  " << initial_Velocities[i_points][1] << endl;
+	}
+	std::cout << endl;
+	std::cout << endl;
+	std::cout << endl;
+
+	//std::cout << endl;
+	//std::cout << endl;
+
+	//std::cout << "RK Positions : " << endl;
+	//for (int i_points = 0; i_points < Number_Points; i_points++)
+	//{
+	//	std::cout << RK_Positions[i_points][0] << " ,  " << RK_Positions[i_points][1] << endl;
+	//}
+	//std::cout << endl;
+
+	//std::cout << "RK Velocities : " << endl;
+	//for (int i_points = 0; i_points < Number_Points; i_points++)
+	//{
+	//	std::cout << RK_Velocities[i_points][0] << " ,  " << RK_Velocities[i_points][1] << endl;
+	//}
+	//std::cout << endl;
+	//std::cout << endl;
+	//std::cout << endl;
+
+	if ((simulation == Simulation_Method::V) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::All))
+	{
+		std::cout << "V Positions : " << endl;
+		for (int i_points = 0; i_points < Number_Points; i_points++)
+		{
+			std::cout << V_Positions[i_points][0] << " ,  " << V_Positions[i_points][1] << endl;
+		}
+		std::cout << endl;
+
+		//std::cout << "V Position Errors : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << V_Position_Error[i_points][0] << " ,  " << V_Position_Error[i_points][1] << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "V Position Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << V_Position_Error_Actual[i_points][0] << " ,  " << V_Position_Error_Actual[i_points][1] << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+
+		std::cout << "V Velocities : " << endl;
+		for (int i_points = 0; i_points < Number_Points; i_points++)
+		{
+			std::cout << V_Velocities[i_points][0] << " ,  " << V_Velocities[i_points][1] << endl;
+		}
+		std::cout << endl;
+
+		//std::cout << "V Velocity Error : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << V_Velocity_Error[i_points][0] << " ,  " << V_Velocity_Error[i_points][1] << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "V Velocity Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << V_Velocity_Error_Actual[i_points][0] << " ,  " << V_Velocity_Error_Actual[i_points][1] << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+		std::cout << endl;
+	}
+
+	if ((simulation == Simulation_Method::B) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		std::cout << "B Positions : " << endl;
+		for (int i_points = 0; i_points < Number_Points; i_points++)
+		{
+			std::cout << B_Positions[i_points][0] << " ,  " << B_Positions[i_points][1] << endl;
+		}
+		std::cout << endl;
+
+		//std::cout << "B Position Errors : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << B_Position_Error[i_points][0] << " ,  " << B_Position_Error[i_points][1] << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "B Position Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << B_Position_Error_Actual[i_points][0] << " ,  " << B_Position_Error_Actual[i_points][1] << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+
+		std::cout << "B Velocities : " << endl;
+		for (int i_points = 0; i_points < Number_Points; i_points++)
+		{
+			std::cout << B_Velocities[i_points][0] << " ,  " << B_Velocities[i_points][1] << endl;
+		}
+		std::cout << endl;
+
+		//std::cout << "B Velocity Error : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << B_Velocity_Error[i_points][0] << " ,  " << B_Velocity_Error[i_points][1] << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "B Velocity Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << B_Velocity_Error_Actual[i_points][0] << " ,  " << B_Velocity_Error_Actual[i_points][1] << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+		std::cout << endl;
+	}
+
+	if ((simulation == Simulation_Method::RK45) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		//std::cout << "RK Position Errors : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << abs(RK_Position_Error[i_points][0]) << " ,  " << abs(RK_Position_Error[i_points][1]) << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "RK Position Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << RK_Position_Error_Actual[i_points][0] << " ,  " << RK_Position_Error_Actual[i_points][1] << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+
+		//std::cout << "RK Velocity Error : " << endl;
+		//for (int i_points = 0; i_points < Number_Points; i_points++)
+		//{
+		//	std::cout << abs(RK_Velocity_Error[i_points][0]) << " ,  " << abs(RK_Velocity_Error[i_points][1]) << endl;
+		//}
+		//std::cout << endl;
+
+		if (Number_Points == 2)
+		{
+			std::cout << "RK Velocity Error (Actual) : " << endl;
+			for (int i_points = 0; i_points < Number_Points; i_points++)
+			{
+				std::cout << abs(RK_Velocity_Error_Actual[i_points][0]) << " ,  " << abs(RK_Velocity_Error_Actual[i_points][1]) << endl;
+			}
+			std::cout << endl;
+		}
+		std::cout << endl;
+		std::cout << endl;
+	}
+
+	//std::cout << "Forces : " << endl;
+	//for (int i_points = 0; i_points < Number_Points; i_points++)
+	//{
+	//	std::cout << Force_Vector[i_points][0] << " ,  " << Force_Vector[i_points][1] << endl;
+	//}
+	//std::cout << endl;
+
+	//std::cout << "Powers : " << endl;
+	//for (int i_points = 0; i_points < Number_Points; i_points++)
+	//{
+	//	std::cout << Power_Vector[i_points] << endl;
+	//}
+	//std::cout << endl;
+
+	std::cout << "Initial Energy : " << initial_Total_Energy << endl;
+	std::cout << "Initial Momentum : " << endl;
+	std::cout << initial_Total_Momentum[0] << " ,  " << initial_Total_Momentum[1] << endl;
+	std::cout << endl;
+
+	if ((simulation == Simulation_Method::V) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::All))
+	{
+		std::cout << "V Energy : " << V_Total_Energy << endl;
+		std::cout << "V Energy Error : " << abs(V_Total_Energy - initial_Total_Energy) << endl;
+		std::cout << "V Momentum : " << endl;
+		std::cout << V_Total_Momentum[0] << " ,  " << V_Total_Momentum[1] << endl;
+		std::cout << "V Momentum Error : " << endl;
+		std::cout << abs(V_Total_Momentum[0] - initial_Total_Momentum[0]) << " ,  " << abs(V_Total_Momentum[1] - initial_Total_Momentum[1]) << endl;
+		std::cout << endl;
+	}
+
+	if ((simulation == Simulation_Method::B) || (simulation == Simulation_Method::V_B) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		std::cout << "B Energy : " << B_Total_Energy << endl;
+		std::cout << "B Energy Error : " << abs(B_Total_Energy - initial_Total_Energy) << endl;
+		std::cout << "B Momentum : " << endl;
+		std::cout << B_Total_Momentum[0] << " ,  " << B_Total_Momentum[1] << endl;
+		std::cout << "B Momentum Error : " << endl;
+		std::cout << abs(B_Total_Momentum[0] - initial_Total_Momentum[0]) << " ,  " << abs(B_Total_Momentum[1] - initial_Total_Momentum[1]) << endl;
+		std::cout << endl;
+	}
+
+	if ((simulation == Simulation_Method::RK45) || (simulation == Simulation_Method::V_RK) || (simulation == Simulation_Method::B_RK) || (simulation == Simulation_Method::All))
+	{
+		std::cout << "RK Energy : " << RK_Total_Energy << endl;
+		std::cout << "RK Energy Error : " << abs(RK_Total_Energy - initial_Total_Energy) << endl;
+		std::cout << "RK Momentum : " << endl;
+		std::cout << RK_Total_Momentum[0] << " ,  " << RK_Total_Momentum[1] << endl;
+		std::cout << "RK Momentum Error : " << endl;
+		std::cout << abs(RK_Total_Momentum[0] - initial_Total_Momentum[0]) << " ,  " << abs(RK_Total_Momentum[1] - initial_Total_Momentum[1]) << endl;
+		std::cout << endl;
+	}
+
+
+	//std::cout << "Forces, x : " << endl;
+	//for (int i_points1 = 0; i_points1 < Number_Points; i_points1++)
+	//{
+	//	for (int i_points2 = 0; i_points2 < Number_Points; i_points2++)
+	//	{
+	//		std::cout << Gravitational_Force_Operator[i_points1][i_points2][0] << " ,  " ;
+	//	}
+	//	std::cout << endl;
+	//}
+	//std::cout << endl;
+
+	//std::cout << "Forces, y : " << endl;
+	//for (int i_points1 = 0; i_points1 < Number_Points; i_points1++)
+	//{
+	//	for (int i_points2 = 0; i_points2 < Number_Points; i_points2++)
+	//	{
+	//		std::cout << Gravitational_Force_Operator[i_points1][i_points2][1] << " ,  ";
+	//	}
+	//	std::cout << endl;
+	//}
+	//std::cout << endl;
+
+	std::cout << endl;
+	std::cout << "B Time  Elapsed : " << B_time << endl;
+	std::cout << "V Time  Elapsed : " << V_time << endl;
+	std::cout << "RK Time  Elapsed : " << RK_time << endl;
+	std::cout << endl;
+	std::cout << "Eigen Time Elapsed : " << eigen_time << endl;
+	std::cout << "Clustering Time Elapsed : " << clustering_time << endl;
+	std::cout << "Eigen Time (for Hexagon) Elapsed : " << eigen_time2 << endl;
+
+
+
+	return 0;
+}
+
