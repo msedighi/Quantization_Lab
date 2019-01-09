@@ -5,6 +5,16 @@
 #include "Data_Structures.h"
 // Particle Dynamics functions 
 
+double* Force12(double* r1, double* r2, Interaction* interaction, int dim)
+{
+	double* force = new double[dim];
+
+	double distance = Euclidean_Distance(r1, r2, dim);
+	for (int i = 0; i < dim; i++)
+		force[i] = (interaction->Force(distance) / distance) * (r2[i] - r1[i]);
+	return force;
+}
+
 double* Force12(double* r1, double* r2, double(*Force_func)(double), int dim)
 {
 	double* force = new double[dim];
@@ -15,10 +25,44 @@ double* Force12(double* r1, double* r2, double(*Force_func)(double), int dim)
 	return force;
 }
 
+double Energy12(double* r1, double* r2, Interaction* interaction, int dim)
+{
+	double distance = Euclidean_Distance(r1, r2, dim);
+	return interaction->Energy(distance);
+}
+
 double Energy12(double* r1, double* r2, double(*Energy_func)(double), int dim)
 {
 	double distance = Euclidean_Distance(r1, r2, dim);
 	return Energy_func(distance);
+}
+
+double*** Force_Operator(Interaction* interaction, double** positions, int num_points, int dim, double** force_vector)
+{
+	double*** force_array = new double**[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		force_array[index_r] = new double*[num_points];
+		force_vector[index_r] = new double[dim];
+		for (int i = 0; i < dim; i++) { force_vector[index_r][i] = 0; }
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			force_array[index_r][index_c] = new double[dim];
+
+			if (index_r == index_c)
+			{
+				for (int i = 0; i < dim; i++) { force_array[index_r][index_c][i] = 0; }
+			}
+			else
+			{
+				force_array[index_r][index_c] = Force12(positions[index_c], positions[index_r], interaction, dim);
+				for (int i = 0; i < dim; i++) { force_vector[index_r][i] += force_array[index_r][index_c][i]; }
+			}
+
+		}
+	}
+	return force_array;
 }
 
 double*** Force_Operator(double(*Force_func)(double), double** positions, int num_points, int dim, double** force_vector)
@@ -63,14 +107,55 @@ double* Momentum(double** velocities, double* masses, int num_points, int dim)
 	return momentum;
 }
 
-double Kinetic_Energy(double** velocities, double* masses, int num_points, int dim)
+double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim)
+{
+	double* energy_exchange = new double[num_points];
+	double** local_force = new double*[num_points];
+	Force_Operator(interaction, positions, num_points, dim, local_force);
+	for (int i = 0; i < num_points; i++)
+	{
+		energy_exchange[i] = 0;
+		for (int j = 0; j < dim; j++)
+		{
+			energy_exchange[i] += local_force[i][j] * velocities[i][j];
+		}
+	}
+	return energy_exchange;
+}
+
+double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy)
+{
+	double* energy_vector = new double[num_points];
+	total_energy = 0;
+	for (int i = 0; i < num_points; i++)
+	{
+		energy_vector[i] = 0;
+		for (int j = 0; j < dim; j++)
+		{
+			energy_vector[i] += masses[i] * velocities[i][j] * velocities[i][j];
+		}
+		total_energy += energy_vector[i] / 2.0;
+	}
+
+	return energy_vector;
+}
+
+double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim)
+{
+	double total_energy;
+	double* energy_vector = Kinetic_Energy(velocities, masses, num_points, dim, total_energy);
+
+	return energy_vector;
+}
+
+double Potential_Energy(Interaction* interaction, double** positions, int num_points, int dim)
 {
 	double energy = 0;
 	for (int i = 0; i < num_points; i++)
 	{
-		for (int j = 0; j < dim; j++)
+		for (int j = 0; j < i; j++)
 		{
-			energy += masses[i] * velocities[i][j] * velocities[i][j] / 2;
+			energy += Energy12(positions[i], positions[j], interaction, dim);
 		}
 	}
 	return energy;
@@ -88,7 +173,6 @@ double Potential_Energy(double(*energy_func)(double), double** positions, int nu
 	}
 	return energy;
 }
-
 
 // RadialPower Force Class
 double RadialPower_Force::Coefficient = 100.0;
@@ -109,23 +193,53 @@ double RadialPower_Force::Energy(double r)
 double Gravitation::Coefficient = 100.0;
 double Gravitation::Force(double r)
 {
-	return (-Coefficient / sqrt(r));
+	return (-Coefficient / (r*r));
 }
 double Gravitation::Energy(double r)
 {
 	return (-Coefficient / r);
 }
-
+// Logarithmic Class
+double Logarithmic::Coefficient = 100.0;
+double Logarithmic::Force(double r)
+{
+	return (-Coefficient / r);
+}
+double Logarithmic::Energy(double r)
+{
+	return (Coefficient * log(r));
+}
+// Inverse Root
+double InverseRoot::Coefficient = 100.0;
+double InverseRoot::Force(double r)
+{
+	return (-Coefficient / sqrt(r));
+}
+double InverseRoot::Energy(double r)
+{
+	return (2 * Coefficient * sqrt(r));
+}
 // Spring Class
 double Spring::Coefficient = 1.0;
 double Spring::Force(double r)
-	{
-		return (-Coefficient * r);
-	}
+{
+	return (-Coefficient * r);
+}
 double Spring::Energy(double r)
-	{
-		return (Coefficient * r * r / 2.0);
-	}
+{
+	return (Coefficient * r * r / 2.0);
+}
+// Lennard Jones Class
+double Lennard_Jones::Coefficient = 100.0;
+double Lennard_Jones::MinPotential_Radius = 10;
+double Lennard_Jones::Force(double r)
+{
+	return (- 12 * (Coefficient / MinPotential_Radius) * (pow(MinPotential_Radius / r, 13) - pow(MinPotential_Radius / r, 7)));
+}
+double Lennard_Jones::Energy(double r)
+{
+	return (Coefficient * (pow(MinPotential_Radius / r, 12) - 2 * pow(MinPotential_Radius / r, 6)));
+}
 //
 
 // Particle Dynamics Algorithms
@@ -166,6 +280,36 @@ void Verlet(double(*Force_func)(double), double** x, double** v, double* m, doub
 			}
 		}
 	}
+}
+
+void Verlet(Interaction* interaction, double** x, double** v, double* m, double dt, int num_points, int dim)
+{
+	double** force = new double*[num_points];
+	double** a = new double*[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		a[index_r] = new double[dim];
+	}
+
+	Force_Operator(interaction, x, num_points, dim, force);
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		for (int index_c = 0; index_c < dim; index_c++)
+		{
+			a[index_r][index_c] = force[index_r][index_c] / m[index_r];
+			x[index_r][index_c] += dt * v[index_r][index_c] + dt * dt * a[index_r][index_c] / 2.0;
+		}
+	}
+
+	Force_Operator(interaction, x, num_points, dim, force);
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		for (int index_c = 0; index_c < dim; index_c++)
+		{
+			v[index_r][index_c] += dt * (force[index_r][index_c] / m[index_r] + a[index_r][index_c]) / 2.0;
+		}
+	}
+
 }
 
 void Verlet(double(*Force_func)(double), double** x, double** v, double* m, double dt, int num_points, int dim)

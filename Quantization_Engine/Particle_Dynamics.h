@@ -9,20 +9,40 @@
 
 enum Simulation_Method { V, B, RK45, V_B, B_RK, V_RK, All };
 
+struct Interaction
+{
+public:
+	//static double Coefficient;
+	virtual double Force(double r) = 0;
+	virtual double Energy(double r) = 0;
+};
+
+double* Force12(double* r1, double* r2, Interaction* interaction, int dim);
+
 double* Force12(double* r1, double* r2, double(*Force_func)(double), int dim);
 
+double Energy12(double* r1, double* r2, Interaction* interaction, int dim);
+
 double Energy12(double* r1, double* r2, double(*Energy_func)(double), int dim);
+
+double*** Force_Operator(Interaction* interaction, double** positions, int num_points, int dim, double** force_vector);
 
 double*** Force_Operator(double(*Force_func)(double), double** positions, int num_points, int dim, double** force_vector);
 
 double* Momentum(double** velocities, double* masses, int num_points, int dim);
 
-double Kinetic_Energy(double** velocities, double* masses, int num_points, int dim);
+double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim);
+
+double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy);
+
+double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim);
+
+double Potential_Energy(Interaction* interaction, double** positions, int num_points, int dim);
 
 double Potential_Energy(double(*energy_func)(double), double** positions, int num_points, int dim);
 
 
-class RadialPower_Force
+struct RadialPower_Force
 {
 public:
 	static double Coefficient;
@@ -30,26 +50,53 @@ public:
 	template<int p> static double Energy(double r);
 };
 
-class Gravitation
+struct Gravitation : public Interaction
 {
 public:
 	static double Coefficient;
-	static double Force(double r);
-	static double Energy(double r);
+	double Force(double r);
+	double Energy(double r);
 };
 
-class Spring
+struct Logarithmic : public Interaction
 {
 public:
 	static double Coefficient;
-	static double Force(double r);
-	static double Energy(double r);
+	double Force(double r);
+	double Energy(double r);
 };
+
+struct Spring : public Interaction
+{
+public:
+	static double Coefficient;
+	double Force(double r);
+	double Energy(double r);
+};
+
+struct InverseRoot : public Interaction
+{
+public:
+	static double Coefficient;
+	double Force(double r);
+	double Energy(double r);
+};
+
+struct Lennard_Jones : public Interaction
+{
+public:
+	static double Coefficient;
+	static double MinPotential_Radius;
+	double Force(double r);
+	double Energy(double r);
+};
+
 //
 
 // Particle Dynamics Algorithms
-
 void Verlet(double(*Force_func)(double), double** x, double** v, double* m, double t, int num_points, int dim, long num_steps);
+
+void Verlet(Interaction* interaction, double** x, double** v, double* m, double dt, int num_points, int dim);
 
 void Verlet(double(*Force_func)(double), double** x, double** v, double* m, double dt, int num_points, int dim);
 
@@ -58,3 +105,4 @@ void Beeman(double(*Force_func)(double), double** x, double** v, double* m, doub
 void Runge_Kutta_5th(double(*Force_func)(double), double** x, double** v, double* m, double t, int num_points, int dim, long num_steps, double** e_x, double** e_v);
 
 void Simulation_Test_Spring1(double** x0, double** v0, double** x, double** v, double* m, double t, int dim, double** e_x, double** e_v);
+
