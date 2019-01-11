@@ -3,6 +3,8 @@
 #include <iostream>
 #include "Particle_Dynamics.h"
 #include "Data_Structures.h"
+
+using namespace Eigen;
 // Particle Dynamics functions 
 
 double* Force12(double* r1, double* r2, Interaction* interaction, int dim)
@@ -123,6 +125,47 @@ double* Energy_Exchange(Interaction* interaction, double** positions, double** v
 	return energy_exchange;
 }
 
+VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim, MatrixXd orthogonal_transformation)
+{
+	MatrixXd velocities_matrix = MatrixXd::Constant(num_points, dim, 0);
+	MatrixXd local_force_matrix = MatrixXd::Constant(num_points, dim, 0);
+
+	double** local_force = new double*[num_points];
+	Force_Operator(interaction, positions, num_points, dim, local_force);
+	for (int i = 0; i < num_points; i++)
+	{
+		for (int j = 0; j < dim; j++)
+		{
+			velocities_matrix(i,j) = velocities[i][j];
+			local_force_matrix(i, j) = local_force[i][j];
+		}
+	}
+
+	MatrixXd global_velocities = orthogonal_transformation * velocities_matrix;
+	MatrixXd global_forces = orthogonal_transformation * local_force_matrix;
+
+	VectorXd collectiveenergy_exchange = VectorXd::Constant(num_points, 0);
+	for (int i = 0; i < num_points; i++)
+	{
+		collectiveenergy_exchange[i] = global_forces.row(i).dot(global_velocities.row(i));
+	}
+
+	if (false)
+	{
+		std::cout << "Hierarchical Transformation: " << std::endl;
+		std::cout << orthogonal_transformation << std::endl;
+		std::cout << std::endl;
+		std::cout << "Local Forces: " << std::endl;
+		std::cout << local_force_matrix << std::endl;
+		std::cout << std::endl;
+		std::cout << "Global Forces: " << std::endl;
+		std::cout << global_forces << std::endl;
+		std::cout << std::endl;
+	}
+
+	return collectiveenergy_exchange;
+}
+
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy)
 {
 	double* energy_vector = new double[num_points];
@@ -142,7 +185,7 @@ double* Kinetic_Energy(double** velocities, double* masses, int num_points, int 
 
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim)
 {
-	double total_energy;
+	double total_energy = 0;
 	double* energy_vector = Kinetic_Energy(velocities, masses, num_points, dim, total_energy);
 
 	return energy_vector;

@@ -202,18 +202,19 @@
     <ClInclude Include="Data_Structures.h" />
     <ClInclude Include="Data_Structures_Test.h" />
     <ClInclude Include="Particle_Dynamics.h" />
+    <ClInclude Include="Particle_to_Wave.h" />
     <ClInclude Include="Quantization_Engine.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TriangleTile.h" />
-    <ClInclude Include="Wave_States.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Clusters.cpp" />
     <ClCompile Include="Data_Structures.cpp" />
     <ClCompile Include="Data_Structures_Test.cpp" />
     <ClCompile Include="Particle_Dynamics.cpp" />
+    <ClCompile Include="Particle_to_Wave.cpp" />
     <ClCompile Include="Quantization_Engine.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -224,7 +225,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TriangleTile.cpp" />
-    <ClCompile Include="Wave_States.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

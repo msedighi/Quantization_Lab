@@ -42,13 +42,13 @@
     <ClInclude Include="Particle_Dynamics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Wave_States.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Quantization_Engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Data_Structures_Test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle_to_Wave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,10 +71,10 @@
     <ClCompile Include="Data_Structures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Wave_States.cpp">
+    <ClCompile Include="Data_Structures_Test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Data_Structures_Test.cpp">
+    <ClCompile Include="Particle_to_Wave.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

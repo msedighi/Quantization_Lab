@@ -4,6 +4,7 @@
 #endif // !1
 
 #include "iostream"
+#include "Eigen/Dense"
 
 // Particle Dynamics functions 
 
@@ -32,6 +33,8 @@ double*** Force_Operator(double(*Force_func)(double), double** positions, int nu
 double* Momentum(double** velocities, double* masses, int num_points, int dim);
 
 double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim);
+
+Eigen::VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim, Eigen::MatrixXd orthogonal_transformation);
 
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy);
 

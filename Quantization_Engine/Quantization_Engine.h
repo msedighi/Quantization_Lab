@@ -7,7 +7,7 @@
 #include "TriangleTile.h"
 #include "Clusters.h"
 #include "Particle_Dynamics.h"
-#include "Wave_States.h"
+#include "Particle_to_Wave.h"
 
 
 class Compute
@@ -38,6 +38,7 @@ public:
 	double* KineticEnergy_Vector;
 	double* ClassicalEnergy_Exchange;
 	Eigen::VectorXd PotentialEnergy_Vector;
+	Eigen::VectorXd GlobalEnergy_Exchange;
 
 	Eigen::VectorXd ClassicalHamiltonian_Energy;
 	Eigen::VectorXd ClassicalLaplacian_Energy;
@@ -62,7 +63,16 @@ public:
 	void Run(double** positions, double** velocities, double* masses, int num_points, int dimension, double dt, long num_scale_bins, bool eigenvectors_flag = false, bool perturb_flag = false, bool smooth_flag = false);
 	void Run(Interaction* interaction, double** positions, double** velocities, double* masses, int num_points, int dimension, double dt, long num_scale_bins, bool eigenvectors_flag = false, bool perturb_flag = false, bool smooth_flag = false);
 
-	Compute(int num_points, long num_scale_bins, int perturb_order);
+	// Points to Wave (TiangleTile)
+	int Num_TileHubs;
+	int Tile_Dimension;
+	double** Tile_Positions;
+	Eigen::VectorXd Tile_Waves;
+	//
+
+	// Constructors
+	Compute(int num_points, long num_scale_bins, int num_tilelayers, int perturb_order);
+	Compute(int num_points, long num_scale_bins, int num_tilelayers);
 	Compute(int num_points, long num_scale_bins);
 	~Compute();
 private:
@@ -87,6 +97,10 @@ private:
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian;
 	Eigen::MatrixXd PotentialEnergy_Operator;
 	Eigen::MatrixXd PotentialEnergy_Laplacian;
+	//
+
+	// Points to Wave (TiangleTile)
+	WaveParticle_Interface* Tile_Interface;
 	//
 
 	//std::ofstream logFile;
