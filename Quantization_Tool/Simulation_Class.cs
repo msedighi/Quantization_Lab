@@ -15,8 +15,9 @@ namespace Quantization_Tool
 
         public double[] Coordinate_Range, Speed_Range;
 
-        Output_Variables Out;
         WrapperClass.Quantization Q;
+        Output_Variables Out;
+        public Tile_Variables Tile;
 
         GCHandle[] handle_Positions;
         GCHandle[] handle_Velocities;
@@ -36,19 +37,15 @@ namespace Quantization_Tool
                 Q = new Quantization(state.Num_Points, state.Num_ScaleBins);
             }
 
-            Out.Num_TileHubs = Q.Num_TileHubs;
-            Out.Tile_Dimension = Q.Tile_Dimension;
-            Out.Tile_Positions = new double[Out.Num_TileHubs][];
-            Out.Tile_Waves = new double[Out.Num_TileHubs];
+            Tile = new Tile_Variables(Q.Num_TileHubs, Q.Tile_Dimension);
             unsafe
             {
                 // Un-managed Code!
-                for (uint i_p = 0; i_p < Out.Num_TileHubs; i_p++)
+                for (uint i_p = 0; i_p < Tile.Num_TileHubs; i_p++)
                 {
-                    Out.Tile_Positions[i_p] = new double[Out.Tile_Dimension];
-                    for (uint i_d = 0; i_d < Out.Tile_Dimension; i_d++)
+                    for (uint i_d = 0; i_d < Tile.Tile_Dimension; i_d++)
                     {
-                        Out.Tile_Positions[i_p][i_d] = Q.Tile_Positions[i_p][i_d];
+                        Tile.Tile_Positions[i_p][i_d] = Q.Tile_Positions[i_p][i_d];
                     }
                 }
             }
@@ -131,9 +128,13 @@ namespace Quantization_Tool
                     }
                 }
 
-                for (uint i_p = 0; i_p < Out.Num_TileHubs; i_p++)
+                for (uint i_p = 0; i_p < Tile.Num_TileHubs; i_p++)
                 {
-                    Out.Tile_Waves[i_p] = Q.Tile_Waves[i_p];
+                    Tile.Tile_ScalarField[i_p] = Q.Tile_ScalarField[i_p];
+                    for (uint i_d = 0; i_d < Tile.Tile_Dimension; i_d++)
+                    {
+                        Tile.Tile_VectorField[i_p][i_d] = Q.Tile_VectorField[i_p][i_d];
+                    }
                 }
             }
 

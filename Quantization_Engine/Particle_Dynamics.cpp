@@ -141,8 +141,8 @@ VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions,
 		}
 	}
 
-	MatrixXd global_velocities = orthogonal_transformation * velocities_matrix;
-	MatrixXd global_forces = orthogonal_transformation * local_force_matrix;
+	MatrixXd global_velocities = orthogonal_transformation.transpose() * velocities_matrix;
+	MatrixXd global_forces = orthogonal_transformation.transpose() * local_force_matrix;
 
 	VectorXd collectiveenergy_exchange = VectorXd::Constant(num_points, 0);
 	for (int i = 0; i < num_points; i++)
@@ -164,6 +164,55 @@ VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions,
 	}
 
 	return collectiveenergy_exchange;
+}
+
+Global_Variables* Collective_Variables(Interaction* interaction, double** positions, double** velocities, double* masses, int num_points, int dim, Eigen::MatrixXd orthogonal_transformation)
+{
+	Global_Variables* collective_variables = new Global_Variables(num_points, dim);
+
+	MatrixXd positions_matrix = MatrixXd::Constant(num_points, dim, 0);
+	MatrixXd velocities_matrix = MatrixXd::Constant(num_points, dim, 0);
+	MatrixXd momentum_matrix = MatrixXd::Constant(num_points, dim, 0);
+
+	MatrixXd local_force_matrix = MatrixXd::Constant(num_points, dim, 0);
+
+	double** local_force = new double*[num_points];
+	Force_Operator(interaction, positions, num_points, dim, local_force);
+	for (int i = 0; i < num_points; i++)
+	{
+		for (int j = 0; j < dim; j++)
+		{
+			positions_matrix(i, j) = positions[i][j];
+			velocities_matrix(i, j) = velocities[i][j];
+			momentum_matrix(i, j) = masses[i] * velocities[i][j];
+
+			local_force_matrix(i, j) = local_force[i][j];
+		}
+	}
+
+	collective_variables->Global_Positions = orthogonal_transformation.transpose() * positions_matrix;
+	collective_variables->Global_Velocities = orthogonal_transformation.transpose() * velocities_matrix;
+	collective_variables->Global_Momentum = orthogonal_transformation.transpose() * momentum_matrix;
+
+	MatrixXd global_forces = orthogonal_transformation.transpose() * local_force_matrix;
+
+	for (int i = 0; i < num_points; i++)
+	{
+		collective_variables->Global_EnergyExchange[i] = global_forces.row(i).dot((collective_variables->Global_Velocities).row(i));
+		collective_variables->Global_KineticEnergy[i] = (collective_variables->Global_Velocities).row(i).dot((collective_variables->Global_Momentum).row(i)) / 2;
+	}
+
+	if (false)
+	{
+		std::cout << "Hierarchical Transformation: " << std::endl;
+		std::cout << orthogonal_transformation << std::endl;
+		std::cout << std::endl;
+		std::cout << "Global Kinetic Energy: " << std::endl;
+		std::cout << collective_variables->Global_KineticEnergy << std::endl;
+		std::cout << std::endl;
+	}
+
+	return collective_variables;
 }
 
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy)

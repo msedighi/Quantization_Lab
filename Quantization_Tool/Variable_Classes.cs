@@ -41,6 +41,7 @@ namespace Quantization_Tool
         }
 
     }
+
     class Output_Variables
     {
         public double Min_Scale;
@@ -80,13 +81,6 @@ namespace Quantization_Tool
 
         public double[][] Laplacian_Energy_Derivative;
         public double[][] Laplacian_Energy_Derivative_smoothed;
-
-        // Triangle-Tile Waves
-        public int Num_TileHubs;
-        public int Tile_Dimension;
-        public double[][] Tile_Positions;
-        public double[] Tile_Waves;
-        //
 
         public Output_Variables(State_Variables state)
         {
@@ -140,4 +134,28 @@ namespace Quantization_Tool
             }
         }
     }
+
+    class Tile_Variables
+    {
+        public int Num_TileHubs;
+        public int Tile_Dimension;
+        public double[][] Tile_Positions;
+        public double[] Tile_ScalarField;
+        public double[][] Tile_VectorField;
+
+        public Tile_Variables(int num_hubs, int dimension)
+        {
+            Num_TileHubs = num_hubs;
+            Tile_Dimension = dimension;
+            Tile_ScalarField = new double[num_hubs];
+            Tile_VectorField = new double[num_hubs][];
+            Tile_Positions = new double[num_hubs][];
+            for (uint i_p = 0; i_p < num_hubs; i_p++)
+            {
+                Tile_Positions[i_p] = new double[dimension];
+                Tile_VectorField[i_p] = new double[dimension];
+            }
+        }
+    }
+
 }

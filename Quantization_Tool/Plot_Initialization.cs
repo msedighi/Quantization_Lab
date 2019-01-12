@@ -6,11 +6,11 @@ namespace Quantization_Tool
 {
     public partial class Form1 : Form
     {
-        private void Initialize_PointsPlot(PlotModel points_plot)
+        private void Initialize_PointsPlot(PlotModel points_plot, string name)
         {
-            //points_plot.PlotAreaBorderThickness = new OxyThickness(2.0);
+            //points_plot.PlotAreaBorderThickness = new OxyThickness(10.0);
             points_plot.PlotMargins = new OxyThickness(0.0);
-            points_plot.Title = "Points";
+            points_plot.Title = name;
             points_plot.TitleFontWeight = 5;
 
             OxyPlot.Axes.LinearAxis x = new OxyPlot.Axes.LinearAxis();

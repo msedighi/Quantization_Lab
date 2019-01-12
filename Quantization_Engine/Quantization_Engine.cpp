@@ -64,11 +64,11 @@ void Compute::Perturb(double** dH, int num_points, long num_scale_bins, double* 
 
 void Compute::Run(double** positions, double** velocities, double* masses, int num_points, int dimension, double dt, long num_scale_bins, bool eigenvectors_flag, bool perturb_flag, bool smooth_flag)
 {	
-	//InverseRoot* interaction = new InverseRoot();
+	InverseRoot* interaction = new InverseRoot();
 	//Spring* interaction = new Spring();
 	//Gravitation* interaction = new Gravitation();
 	//Lennard_Jones* interaction = new Lennard_Jones();
-	Logarithmic* interaction = new Logarithmic();
+	//Logarithmic* interaction = new Logarithmic();
 	Compute::Run(interaction, positions, velocities, masses, num_points, dimension, dt, num_scale_bins, eigenvectors_flag, perturb_flag, smooth_flag);
 }
 
@@ -116,12 +116,11 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	//
 
 	// Global Energy Exchange 
-	GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, Hierarchical_Clusters->Orthogonal_Transformation);
+	//GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, (Hierarchical_Clusters->Orthogonal_Transformation).reverse().transpose());
+	//GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, ClassicalLaplacian_EigenStates);
+	Global_ClassicalVariables = Collective_Variables(interaction, positions, velocities, masses, num_points, dimension, ClassicalLaplacian_EigenStates);
 
-	Tile_Waves = Tile_Interface->Run(GlobalEnergy_Exchange);
-
-	// NEED TO INCLUDE TRIANGLE TILE IN OUTPUT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-
+	Tile_Fields = Tile_Interface->Run(Global_ClassicalVariables, num_points, dimension);
 	//
 
 	if (debug_flag)
@@ -151,7 +150,7 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 		for (int i_p=0; i_p < num_points; i_p++)
 			for (int j_p = 0; j_p < num_points; j_p++)
 			{
-				Correlation_Operator(i_p, j_p) = StepFunc_3((double)Scale_Counter / (double)num_scale_bins, Distances.Operator(i_p, j_p) / (Max_Distance + Min_Distance));
+				Correlation_Operator(i_p, j_p) = StepFunc_0((double)Scale_Counter / (double)num_scale_bins, Distances.Operator(i_p, j_p) / (Max_Distance + Min_Distance));
 			}
 		//Correlation_Operator = (Distances.Operator.array() <= Scale_Distance).cast<double>();
 		//Correlation_Operator[Scale_Counter] = (Distances.Operator.array() / Scale_Distance).cast<double>();
@@ -678,6 +677,7 @@ Compute::~Compute()
 	delete[] KineticEnergy_Vector;
 	delete[] ClassicalEnergy_Exchange;
 	delete Hierarchical_Clusters;
+	delete Global_ClassicalVariables;
 	delete Tile_Interface;
 
 	for (int i = 0; i < Num_TileHubs; i++)
@@ -691,7 +691,7 @@ int main()
 
 	bool error_calculation = false;
 
-	const long Number_Points = 8;
+	const long Number_Points = 6;
 	const long Dimension = 2;
 
 	const long Number_Scale_Bins = Number_Points * Number_Points * 10;
@@ -836,7 +836,7 @@ int main()
 	}
 
 
-	Compute Q_Compute = Compute(Number_Points, Number_Scale_Bins, 10);
+	Compute Q_Compute = Compute(Number_Points, Number_Scale_Bins, 2);
 	bool eigenvectors_flag = true;
 	bool smooth_flag = false;
 	bool perturb_flag = false;

@@ -467,6 +467,25 @@ namespace Quantization_Tool
             plotModel.InvalidatePlot(true);
         }
 
+        public void PointsPlot_Coloring(double[] wave_vector)
+        {
+            int max = 100;
+            plotModel.Annotations.Clear();
+            for (int i_p = 0; i_p < numPoints; i_p++)
+            {
+                int field_value = (int)Math.Round(wave_vector[i_p]/10);
+                plotData[i_p].LabelFormatString = field_value.ToString();
+
+                if (field_value > (max / 2 - 1))
+                    plotData[i_p].MarkerFill = OxyPalettes.BlueWhiteRed(max).Colors[max / 2 - 1];
+                else if (field_value < -(max / 2))
+                    plotData[i_p].MarkerFill = OxyPalettes.BlueWhiteRed(max).Colors[0];
+                else
+                    plotData[i_p].MarkerFill = OxyPalettes.BlueWhiteRed(max).Colors[max / 2 + field_value];
+            }
+            plotModel.InvalidatePlot(true);
+        }
+
         public void PointsPlot_Coloring(int selected_index)
         {
             plotModel.Annotations.Clear();
@@ -482,6 +501,27 @@ namespace Quantization_Tool
                     plotData[i_p].MarkerFill = OxyColors.WhiteSmoke;
                     plotData[i_p].LabelFormatString = "0";
                 }
+            }
+            plotModel.InvalidatePlot(true);
+        }
+
+        public void PointsPlot_Vectorizing(double[][] input_vector_field)
+        {
+            OxyPlot.Annotations.ArrowAnnotation[] vector_field = new OxyPlot.Annotations.ArrowAnnotation[numPoints];
+            plotModel.Annotations.Clear();
+            for (int i_p = 0; i_p < numPoints; i_p++)
+            {
+                vector_field[i_p] = new OxyPlot.Annotations.ArrowAnnotation();
+                vector_field[i_p].StartPoint = new DataPoint(plotData[i_p].Points[0].X, plotData[i_p].Points[0].Y);
+                vector_field[i_p].EndPoint = new DataPoint(plotData[i_p].Points[0].X + input_vector_field[i_p][0], plotData[i_p].Points[0].Y + input_vector_field[i_p][1]);
+                vector_field[i_p].HeadLength = 4;
+                vector_field[i_p].HeadWidth = 1;
+
+                double vector_length = Math.Sqrt(input_vector_field[i_p][0] * input_vector_field[i_p][0] + input_vector_field[i_p][1] * input_vector_field[i_p][1]);
+                //vector_field[i_p].Color = OxyPalettes.Gray(100).Colors[99 - (int)Math.Round(vector_length * 99)];
+                //plotData[i_p].MarkerFill = OxyPalettes.Gray(100).Colors[99 - (int)Math.Round(vector_length * 99)];
+
+                plotModel.Annotations.Add(vector_field[i_p]);
             }
             plotModel.InvalidatePlot(true);
         }

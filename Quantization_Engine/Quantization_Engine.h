@@ -38,7 +38,9 @@ public:
 	double* KineticEnergy_Vector;
 	double* ClassicalEnergy_Exchange;
 	Eigen::VectorXd PotentialEnergy_Vector;
-	Eigen::VectorXd GlobalEnergy_Exchange;
+
+	//Eigen::VectorXd GlobalEnergy_Exchange;
+	Global_Variables* Global_ClassicalVariables;
 
 	Eigen::VectorXd ClassicalHamiltonian_Energy;
 	Eigen::VectorXd ClassicalLaplacian_Energy;
@@ -67,7 +69,7 @@ public:
 	int Num_TileHubs;
 	int Tile_Dimension;
 	double** Tile_Positions;
-	Eigen::VectorXd Tile_Waves;
+	Tile_Fields* Tile_Fields;
 	//
 
 	// Constructors

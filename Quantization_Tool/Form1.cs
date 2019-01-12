@@ -19,6 +19,10 @@ namespace Quantization_Tool
         private OxyPlot.Series.ScatterSeries[] Points_Data;
         private PointsPlotWiring PointsPlot_Wiring;
 
+        private PlotModel Tile_Plot = new PlotModel();
+        private OxyPlot.Series.ScatterSeries[] Tile_Data;
+        private PointsPlotWiring TilePlot_Wiring;
+
         private PlotModel ClassicalHamiltonianTime_Plot = new PlotModel();
         private OxyPlot.Series.ScatterSeries ClassicalEnergy_Time = new OxyPlot.Series.ScatterSeries();
         private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonianTime_Data;
@@ -140,9 +144,10 @@ namespace Quantization_Tool
 
             // Initialize Values
             Random rand = new Random();
-            int _Num_Points = 6;
+            int _Num_Points = 10;
             int _Dimension = 2;
-            int _Num_ScaleBins = 200;
+            //int _Num_ScaleBins = 200;
+            int _Num_ScaleBins = 20;
             Eigenvectors_flag = false;
             Perturb_flag = false;
             Smooth_flag = false;
@@ -170,7 +175,7 @@ namespace Quantization_Tool
             Sim_Variables.Time_Range = 5.0;
 
             // This:
-            Sim_Variables.dt = 0.005;
+            Sim_Variables.dt = 0.002;
             //Sim_Variables.Num_TimeSteps = 100;
             // Or, 
             // Choose one and find the other : 
@@ -211,7 +216,7 @@ namespace Quantization_Tool
             //
             // Points Plot
             //
-            Initialize_PointsPlot(Points_Plot);
+            Initialize_PointsPlot(Points_Plot, "Points");
             Points_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
 
             for (uint i_p = 0; i_p < State.Num_Points; i_p++)
@@ -227,8 +232,33 @@ namespace Quantization_Tool
             }
 
             PointsPlot_Wiring = new PointsPlotWiring(Points_Plot, Points_Data);
-            plot_ToolStripContainer_BottomLeft.Attach(Points_Plot);
+            plot_ToolStripContainer_BottomRight.Attach(Points_Plot);
             PointsPlot_Wiring.Activate();
+            //
+
+            // Tile Plot
+            //
+            Initialize_PointsPlot(Tile_Plot, "Triangular Tile");
+            Tile_Data = new OxyPlot.Series.ScatterSeries[Sim_Variables.Tile.Num_TileHubs];
+
+            for (uint i_p = 0; i_p < Sim_Variables.Tile.Num_TileHubs; i_p++)
+            {
+                Tile_Data[i_p] = new OxyPlot.Series.ScatterSeries();
+                Tile_Data[i_p].MarkerType = MarkerType.Circle; 
+                Tile_Data[i_p].MarkerFill = OxyColors.Black;
+                //Tile_Data[i_p].MarkerSize = 10;
+                Tile_Data[i_p].MarkerSize = 2;
+                if (Sim_Variables.Tile.Tile_Dimension == 1)
+                    Tile_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(Sim_Variables.Tile.Tile_Positions[i_p][0], 0));
+                else if (Sim_Variables.Tile.Tile_Dimension == 2)
+                    Tile_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(Sim_Variables.Tile.Tile_Positions[i_p][0], Sim_Variables.Tile.Tile_Positions[i_p][1]));
+                else
+                    throw new Exception("Tile cannot be more than 2 dimensions");
+            }
+
+            TilePlot_Wiring = new PointsPlotWiring(Tile_Plot, Tile_Data);
+            plot_ToolStripContainer_TopRight.Attach(Tile_Plot);
+            TilePlot_Wiring.Activate();
             //
 
             // Classical Energy Plots
@@ -307,10 +337,10 @@ namespace Quantization_Tool
 
             plot_ToolStripContainer_TopMiddle.Attach(ClassicalHamiltonianTime_Plot);
             plot_ToolStripContainer_TopLeft.Attach(ClassicalLaplacianTime_Plot);
-            plot_ToolStripContainer_TopRight.Attach(ClassicalPotentialEnergyTime_Plot);
-            plot_ToolStripContainer_BottomRight.Attach(ClassicalKineticEnergyTime_Plot);
-            //plot_ToolStripContainer_BottomMiddle.Attach(ClassicalEnergyExchangeTime_Plot);
-            plot_ToolStripContainer_BottomMiddle.Attach(ClassicalEnergyTime_Plot);
+            //plot_ToolStripContainer_TopRight.Attach(ClassicalPotentialEnergyTime_Plot);
+            //plot_ToolStripContainer_BottomRight.Attach(ClassicalKineticEnergyTime_Plot);
+            plot_ToolStripContainer_BottomMiddle.Attach(ClassicalEnergyExchangeTime_Plot);
+            plot_ToolStripContainer_BottomLeft.Attach(ClassicalEnergyTime_Plot);
 
             ClassicalHamiltonianTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalHamiltonianTime_Plot, ClassicalHamiltonianTime_Data, ClassicalEnergy_Time);
             ClassicalLaplacianTimePlot_Wiring = new DataPlotWiring(ClassicalLaplacianTime_Plot, ClassicalLaplacianTime_Data);
@@ -535,6 +565,14 @@ namespace Quantization_Tool
                             Min_Energy = output_Variables.Energy_Vector[i_s][i_p];
                     }
                 }
+
+                // Tile Plot Coloring
+                //TilePlot_Wiring.PointsPlot_Coloring(Sim_Variables.Tile.Tile_ScalarField);
+                TilePlot_Wiring.PointsPlot_Vectorizing(Sim_Variables.Tile.Tile_VectorField);
+
+                //PointsPlot_Wiring.PointsPlot_Coloring(output_Variables.ClassicalEnergy_Exchange);
+                //
+
                 EnergyScale_Commutator_Plot.Axes[1].Maximum = Max_Commutator_Energy;
                 EnergyScale_Commutator_Plot.Axes[1].Minimum = -Max_Commutator_Energy;
                 EnergyScale_Plot.Axes[1].Minimum = Min_Energy;
@@ -622,6 +660,7 @@ namespace Quantization_Tool
 
                 ScaleTime_Plot.InvalidatePlot(true);
                 Points_Plot.InvalidatePlot(true);
+                Tile_Plot.InvalidatePlot(true);
 
                 EnergyScale_Laplacian_Plot.InvalidatePlot(true);
                 EnergyScale_Commutator_Plot.InvalidatePlot(true);
@@ -642,6 +681,13 @@ namespace Quantization_Tool
                 EnergyScale_HeatMap_Plot.InvalidatePlot(true);
                 MassScale_HeatMap_Plot.InvalidatePlot(true);
 
+                if (false)
+                {
+                    //int frequency = (int)Math.Round(1000 * Math.Sqrt(output_Variables.Laplacian_Energy[State.Num_ScaleBins / 2][1]));
+                    int frequency = (int)Math.Round(700 * Math.Sqrt(output_Variables.Commutator_Energy[State.Num_ScaleBins / 2][State.Num_Points - 1]));
+                    if (frequency >= 37)
+                        Console.Beep(frequency, 50);
+                }
                 //watch.Stop();
                 //var elapsed = watch.ElapsedMilliseconds/1000.0;
             }

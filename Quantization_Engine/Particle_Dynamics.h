@@ -18,6 +18,25 @@ public:
 	virtual double Energy(double r) = 0;
 };
 
+struct Global_Variables
+{
+public:
+	Eigen::VectorXd Global_KineticEnergy;
+	Eigen::VectorXd Global_EnergyExchange;
+	Eigen::MatrixXd Global_Positions;
+	Eigen::MatrixXd Global_Velocities;
+	Eigen::MatrixXd Global_Momentum;
+
+	Global_Variables(int num_points, int dimension)
+	{
+		Global_KineticEnergy = Eigen::VectorXd::Constant(num_points, 0);
+		Global_EnergyExchange = Eigen::VectorXd::Constant(num_points, 0);
+		Global_Positions = Eigen::MatrixXd::Constant(num_points, dimension, 0);
+		Global_Velocities = Eigen::MatrixXd::Constant(num_points, dimension, 0);
+		Global_Momentum = Eigen::MatrixXd::Constant(num_points, dimension, 0);
+	}
+};
+
 double* Force12(double* r1, double* r2, Interaction* interaction, int dim);
 
 double* Force12(double* r1, double* r2, double(*Force_func)(double), int dim);
@@ -35,6 +54,8 @@ double* Momentum(double** velocities, double* masses, int num_points, int dim);
 double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim);
 
 Eigen::VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim, Eigen::MatrixXd orthogonal_transformation);
+
+Global_Variables* Collective_Variables(Interaction* interaction, double** positions, double** velocities, double* masses, int num_points, int dim, Eigen::MatrixXd orthogonal_transformation);
 
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim, double total_energy);
 
