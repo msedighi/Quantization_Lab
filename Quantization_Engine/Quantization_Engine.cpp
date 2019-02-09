@@ -101,6 +101,7 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	}
 	PotentialEnergy_Vector = PotentialEnergy_Operator * Vac;
 	PotentialEnergy_Laplacian = (MatrixXd)PotentialEnergy_Vector.asDiagonal() - PotentialEnergy_Operator;
+	ClassicalEnergy_Hamiltonian_wVacuum = ClassicalEnergy_Hamiltonian - ClassicalEnergy_Hamiltonian * Vac * Vac.transpose() * ClassicalEnergy_Hamiltonian / ClassicalEnergy_Hamiltonian.sum();
 
 	//
 	ClassicalEnergy = ClassicalEnergy_Hamiltonian.sum() / 2.0;
@@ -113,12 +114,16 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	ClassicalHamiltonian_Eigenstructure.compute(ClassicalEnergy_Hamiltonian);
 	ClassicalHamiltonian_Energy = ClassicalHamiltonian_Eigenstructure.eigenvalues();
 	ClassicalHamiltonian_EigenStates = ClassicalHamiltonian_Eigenstructure.eigenvectors();
+
+	ClassicalHamiltonian_wVacuum_Eigenstructure.compute(ClassicalEnergy_Hamiltonian_wVacuum);
+	ClassicalHamiltonian_wVacuum_Energy = ClassicalHamiltonian_wVacuum_Eigenstructure.eigenvalues();
+	ClassicalHamiltonian_wVacuum_EigenStates = ClassicalHamiltonian_wVacuum_Eigenstructure.eigenvectors();
 	//
 
 	// Global Energy Exchange 
 	//GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, (Hierarchical_Clusters->Orthogonal_Transformation).reverse().transpose());
 	//GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, ClassicalLaplacian_EigenStates);
-	Global_ClassicalVariables = Collective_Variables(interaction, positions, velocities, masses, num_points, dimension, ClassicalLaplacian_EigenStates);
+	Global_ClassicalVariables = Collective_Variables(interaction, positions, velocities, masses, num_points, dimension, ClassicalHamiltonian_wVacuum_EigenStates);
 
 	Tile_Fields = Tile_Interface->Run(Global_ClassicalVariables, num_points, dimension);
 	//
@@ -678,6 +683,7 @@ Compute::~Compute()
 	delete[] ClassicalEnergy_Exchange;
 	delete Hierarchical_Clusters;
 	delete Global_ClassicalVariables;
+	delete Tile_Fields;
 	delete Tile_Interface;
 
 	for (int i = 0; i < Num_TileHubs; i++)

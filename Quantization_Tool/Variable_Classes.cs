@@ -3,19 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace Quantization_Tool
 {
-    class State_Variables
+    public class State_Variables
     {
-        public int Num_Points, Dimension, Number_Pairs;
+        public int Num_Points;
+        public int Dimension;
+        public int Number_Pairs;
         public int Num_ScaleBins;
         public int Num_EnergyBins;
 
         public double Mass_Ratio_Max;
         public double[] Mass_Ratios;
 
-        public double[][] Positions, Velocities;
+        public double[][] Positions;
+        public double[][] Velocities;
 
         public State_Variables(int num_points, int dimension, int num_scalebins) : this(num_points, dimension)
         {
@@ -40,9 +45,10 @@ namespace Quantization_Tool
             }
         }
 
+        public State_Variables() { }
     }
 
-    class Output_Variables
+    public class Output_Variables
     {
         public double Min_Scale;
         public double Min_NonVacScale;
@@ -58,10 +64,10 @@ namespace Quantization_Tool
         public double[][] Commutator_Energy;
         public double[][] Mass_Vector;
         public double[][] Energy_Vector;
-        public double[][,] Laplacian_Orthonormal_Transformation;
-        public double[][,] Energy_Orthonormal_Transformation;
-        public double[][,] Commutator_Orthonormal_Transformation_Real;
-        public double[][,] Commutator_Orthonormal_Transformation_Imag;
+        public double[][][] Laplacian_Orthonormal_Transformation;
+        public double[][][] Energy_Orthonormal_Transformation;
+        public double[][][] Commutator_Orthonormal_Transformation_Real;
+        public double[][][] Commutator_Orthonormal_Transformation_Imag;
 
         // Classical Variables
         public double ClassicalEnergy;
@@ -74,12 +80,16 @@ namespace Quantization_Tool
         public double[] ClassicalEnergy_Vector;
 
         public double[] ClassicalLaplacian_Energy;
-        public double[,] ClassicalLaplacian_EigenStates;
+        public double[][] ClassicalLaplacian_EigenStates;
         public double[] ClassicalHamiltonian_Energy;
-        public double[,] ClassicalHamiltonian_EigenStates;
+        public double[][] ClassicalHamiltonian_EigenStates;
+        public double[] ClassicalHamiltonian_wVacuum_Energy;
+        public double[][] ClassicalHamiltonian_wVacuum_EigenStates;
         //
 
+        [XmlIgnore]
         public double[][] Laplacian_Energy_Derivative;
+        [XmlIgnore]
         public double[][] Laplacian_Energy_Derivative_smoothed;
 
         public Output_Variables(State_Variables state)
@@ -95,23 +105,29 @@ namespace Quantization_Tool
             ClassicalEnergy_Vector = new double[state.Num_Points];
 
             ClassicalLaplacian_Energy = new double[state.Num_Points];
-            ClassicalLaplacian_EigenStates = new double[state.Num_Points, state.Num_Points];
+            ClassicalLaplacian_EigenStates = new double[state.Num_Points][];
             ClassicalHamiltonian_Energy = new double[state.Num_Points];
-            ClassicalHamiltonian_EigenStates = new double[state.Num_Points, state.Num_Points];
+            ClassicalHamiltonian_wVacuum_Energy = new double[state.Num_Points];
+            ClassicalHamiltonian_EigenStates = new double[state.Num_Points][];
+            ClassicalHamiltonian_wVacuum_EigenStates = new double[state.Num_Points][];
 
             for (int i = 0; i < state.Num_Points; i++)
             {
                 Dendogram_Original[i] = new bool[state.Num_Points];
                 Dendogram_Dual[i] = new bool[state.Num_Points];
+
+                ClassicalLaplacian_EigenStates[i] = new double[state.Num_Points];
+                ClassicalHamiltonian_EigenStates[i] = new double[state.Num_Points];
+                ClassicalHamiltonian_wVacuum_EigenStates[i] = new double[state.Num_Points];
             }
             Laplacian_Energy = new double[state.Num_ScaleBins][];
             Commutator_Energy = new double[state.Num_ScaleBins][];
             Mass_Vector = new double[state.Num_ScaleBins][];
             Energy_Vector = new double[state.Num_ScaleBins][];
-            Laplacian_Orthonormal_Transformation = new double[state.Num_ScaleBins][,];
-            Energy_Orthonormal_Transformation = new double[state.Num_ScaleBins][,];
-            Commutator_Orthonormal_Transformation_Real = new double[state.Num_ScaleBins][,];
-            Commutator_Orthonormal_Transformation_Imag = new double[state.Num_ScaleBins][,];
+            Laplacian_Orthonormal_Transformation = new double[state.Num_ScaleBins][][];
+            Energy_Orthonormal_Transformation = new double[state.Num_ScaleBins][][];
+            Commutator_Orthonormal_Transformation_Real = new double[state.Num_ScaleBins][][];
+            Commutator_Orthonormal_Transformation_Imag = new double[state.Num_ScaleBins][][];
 
             Laplacian_Energy_Derivative = new double[state.Num_ScaleBins - 1][];
             Laplacian_Energy_Derivative_smoothed = new double[state.Num_ScaleBins - 1][];
@@ -121,10 +137,18 @@ namespace Quantization_Tool
                 Commutator_Energy[i] = new double[state.Num_Points];
                 Mass_Vector[i] = new double[state.Num_Points];
                 Energy_Vector[i] = new double[state.Num_Points];
-                Laplacian_Orthonormal_Transformation[i] = new double[state.Num_Points, state.Num_Points];
-                Energy_Orthonormal_Transformation[i] = new double[state.Num_Points, state.Num_Points];
-                Commutator_Orthonormal_Transformation_Real[i] = new double[state.Num_Points, state.Num_Points];
-                Commutator_Orthonormal_Transformation_Imag[i] = new double[state.Num_Points, state.Num_Points];
+                Laplacian_Orthonormal_Transformation[i] = new double[state.Num_Points][];
+                Energy_Orthonormal_Transformation[i] = new double[state.Num_Points][];
+                Commutator_Orthonormal_Transformation_Real[i] = new double[state.Num_Points][];
+                Commutator_Orthonormal_Transformation_Imag[i] = new double[state.Num_Points][];
+
+                for (int j = 0; j < state.Num_Points; j++)
+                {
+                    Laplacian_Orthonormal_Transformation[i][j] = new double[state.Num_Points];
+                    Energy_Orthonormal_Transformation[i][j] = new double[state.Num_Points];
+                    Commutator_Orthonormal_Transformation_Real[i][j] = new double[state.Num_Points];
+                    Commutator_Orthonormal_Transformation_Imag[i][j] = new double[state.Num_Points];
+                }
 
                 if (i < (state.Num_ScaleBins - 1))
                 {
@@ -133,9 +157,11 @@ namespace Quantization_Tool
                 }
             }
         }
+
+        public Output_Variables() { }
     }
 
-    class Tile_Variables
+    public class Tile_Variables
     {
         public int Num_TileHubs;
         public int Tile_Dimension;

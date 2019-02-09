@@ -43,9 +43,11 @@ public:
 	Global_Variables* Global_ClassicalVariables;
 
 	Eigen::VectorXd ClassicalHamiltonian_Energy;
+	Eigen::VectorXd ClassicalHamiltonian_wVacuum_Energy;
 	Eigen::VectorXd ClassicalLaplacian_Energy;
 
 	Eigen::MatrixXd ClassicalHamiltonian_EigenStates;
+	Eigen::MatrixXd ClassicalHamiltonian_wVacuum_EigenStates;
 	Eigen::MatrixXd ClassicalLaplacian_EigenStates;
 	//
 
@@ -85,6 +87,7 @@ private:
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> MutualInteraction_Eigenstructure;
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> Commutator_Eigenstructure;
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ClassicalHamiltonian_Eigenstructure;
+	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ClassicalHamiltonian_wVacuum_Eigenstructure;
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ClassicalLaplacian_Eigenstructure;
 
 	Eigen::VectorXd Vac;
@@ -97,6 +100,7 @@ private:
 
 	// Classical Variables
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian;
+	Eigen::MatrixXd ClassicalEnergy_Hamiltonian_wVacuum;
 	Eigen::MatrixXd PotentialEnergy_Operator;
 	Eigen::MatrixXd PotentialEnergy_Laplacian;
 	//

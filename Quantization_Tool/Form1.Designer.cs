@@ -31,7 +31,13 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.button_Run = new System.Windows.Forms.Button();
             this.tableLayoutPanel_Plots = new System.Windows.Forms.TableLayoutPanel();
+            this.plot_ToolStripContainer_TopMiddle = new Quantization_Tool.Plot_ToolStripContainer();
             this.topLeft_panel = new System.Windows.Forms.Panel();
+            this.plot_ToolStripContainer_TopLeft = new Quantization_Tool.Plot_ToolStripContainer();
+            this.plot_ToolStripContainer_TopRight = new Quantization_Tool.Plot_ToolStripContainer();
+            this.plot_ToolStripContainer_BottomLeft = new Quantization_Tool.Plot_ToolStripContainer();
+            this.plot_ToolStripContainer_BottomMiddle = new Quantization_Tool.Plot_ToolStripContainer();
+            this.plot_ToolStripContainer_BottomRight = new Quantization_Tool.Plot_ToolStripContainer();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
@@ -42,6 +48,8 @@
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.label_X = new System.Windows.Forms.Label();
             this.label_Y = new System.Windows.Forms.Label();
+            this.simulation_ProgressBar = new System.Windows.Forms.ProgressBar();
+            this.button_Pause = new System.Windows.Forms.Button();
             this.BottomToolStripPanel = new System.Windows.Forms.ToolStripPanel();
             this.TopToolStripPanel = new System.Windows.Forms.ToolStripPanel();
             this.RightToolStripPanel = new System.Windows.Forms.ToolStripPanel();
@@ -67,16 +75,16 @@
             this.toolStripDropDownButton_Help = new System.Windows.Forms.ToolStripDropDownButton();
             this.toolStripMenuItem_About = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripContainer_Back = new System.Windows.Forms.ToolStripContainer();
-            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.plot_ToolStripContainer_TopMiddle = new Quantization_Tool.Plot_ToolStripContainer();
-            this.plot_ToolStripContainer_TopLeft = new Quantization_Tool.Plot_ToolStripContainer();
-            this.plot_ToolStripContainer_TopRight = new Quantization_Tool.Plot_ToolStripContainer();
-            this.plot_ToolStripContainer_BottomLeft = new Quantization_Tool.Plot_ToolStripContainer();
-            this.plot_ToolStripContainer_BottomMiddle = new Quantization_Tool.Plot_ToolStripContainer();
-            this.plot_ToolStripContainer_BottomRight = new Quantization_Tool.Plot_ToolStripContainer();
             this.plot_SplitContainer1 = new Quantization_Tool.Plot_SplitContainer();
+            this.backgroundWorker_Simulation = new System.ComponentModel.BackgroundWorker();
             this.tableLayoutPanel_Plots.SuspendLayout();
+            this.plot_ToolStripContainer_TopMiddle.SuspendLayout();
             this.topLeft_panel.SuspendLayout();
+            this.plot_ToolStripContainer_TopLeft.SuspendLayout();
+            this.plot_ToolStripContainer_TopRight.SuspendLayout();
+            this.plot_ToolStripContainer_BottomLeft.SuspendLayout();
+            this.plot_ToolStripContainer_BottomMiddle.SuspendLayout();
+            this.plot_ToolStripContainer_BottomRight.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -88,12 +96,6 @@
             this.toolStripContainer_Back.ContentPanel.SuspendLayout();
             this.toolStripContainer_Back.TopToolStripPanel.SuspendLayout();
             this.toolStripContainer_Back.SuspendLayout();
-            this.plot_ToolStripContainer_TopMiddle.SuspendLayout();
-            this.plot_ToolStripContainer_TopLeft.SuspendLayout();
-            this.plot_ToolStripContainer_TopRight.SuspendLayout();
-            this.plot_ToolStripContainer_BottomLeft.SuspendLayout();
-            this.plot_ToolStripContainer_BottomMiddle.SuspendLayout();
-            this.plot_ToolStripContainer_BottomRight.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.plot_SplitContainer1)).BeginInit();
             this.plot_SplitContainer1.SuspendLayout();
             this.SuspendLayout();
@@ -101,9 +103,9 @@
             // button_Run
             // 
             this.button_Run.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.button_Run.Location = new System.Drawing.Point(1700, 11);
+            this.button_Run.Location = new System.Drawing.Point(1624, 18);
             this.button_Run.Name = "button_Run";
-            this.button_Run.Size = new System.Drawing.Size(153, 71);
+            this.button_Run.Size = new System.Drawing.Size(126, 58);
             this.button_Run.TabIndex = 0;
             this.button_Run.Text = "Run";
             this.button_Run.UseVisualStyleBackColor = true;
@@ -128,8 +130,22 @@
             this.tableLayoutPanel_Plots.RowCount = 2;
             this.tableLayoutPanel_Plots.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel_Plots.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel_Plots.Size = new System.Drawing.Size(3529, 1526);
+            this.tableLayoutPanel_Plots.Size = new System.Drawing.Size(3529, 1551);
             this.tableLayoutPanel_Plots.TabIndex = 7;
+            // 
+            // plot_ToolStripContainer_TopMiddle
+            // 
+            this.plot_ToolStripContainer_TopMiddle.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_TopMiddle.ContentPanel
+            // 
+            this.plot_ToolStripContainer_TopMiddle.ContentPanel.Size = new System.Drawing.Size(1169, 699);
+            this.plot_ToolStripContainer_TopMiddle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_TopMiddle.Location = new System.Drawing.Point(1180, 4);
+            this.plot_ToolStripContainer_TopMiddle.Name = "plot_ToolStripContainer_TopMiddle";
+            this.plot_ToolStripContainer_TopMiddle.Size = new System.Drawing.Size(1169, 768);
+            this.plot_ToolStripContainer_TopMiddle.TabIndex = 10;
+            this.plot_ToolStripContainer_TopMiddle.Text = "plot_ToolStripContainer1";
             // 
             // topLeft_panel
             // 
@@ -138,8 +154,78 @@
             this.topLeft_panel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.topLeft_panel.Location = new System.Drawing.Point(4, 4);
             this.topLeft_panel.Name = "topLeft_panel";
-            this.topLeft_panel.Size = new System.Drawing.Size(1169, 755);
+            this.topLeft_panel.Size = new System.Drawing.Size(1169, 768);
             this.topLeft_panel.TabIndex = 7;
+            // 
+            // plot_ToolStripContainer_TopLeft
+            // 
+            this.plot_ToolStripContainer_TopLeft.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_TopLeft.ContentPanel
+            // 
+            this.plot_ToolStripContainer_TopLeft.ContentPanel.Size = new System.Drawing.Size(1167, 697);
+            this.plot_ToolStripContainer_TopLeft.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_TopLeft.Location = new System.Drawing.Point(0, 0);
+            this.plot_ToolStripContainer_TopLeft.Name = "plot_ToolStripContainer_TopLeft";
+            this.plot_ToolStripContainer_TopLeft.Size = new System.Drawing.Size(1167, 766);
+            this.plot_ToolStripContainer_TopLeft.TabIndex = 0;
+            this.plot_ToolStripContainer_TopLeft.Text = "plot_ToolStripContainer1";
+            // 
+            // plot_ToolStripContainer_TopRight
+            // 
+            this.plot_ToolStripContainer_TopRight.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_TopRight.ContentPanel
+            // 
+            this.plot_ToolStripContainer_TopRight.ContentPanel.Size = new System.Drawing.Size(1169, 699);
+            this.plot_ToolStripContainer_TopRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_TopRight.Location = new System.Drawing.Point(2356, 4);
+            this.plot_ToolStripContainer_TopRight.Name = "plot_ToolStripContainer_TopRight";
+            this.plot_ToolStripContainer_TopRight.Size = new System.Drawing.Size(1169, 768);
+            this.plot_ToolStripContainer_TopRight.TabIndex = 11;
+            this.plot_ToolStripContainer_TopRight.Text = "plot_ToolStripContainer1";
+            // 
+            // plot_ToolStripContainer_BottomLeft
+            // 
+            this.plot_ToolStripContainer_BottomLeft.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_BottomLeft.ContentPanel
+            // 
+            this.plot_ToolStripContainer_BottomLeft.ContentPanel.Size = new System.Drawing.Size(1169, 699);
+            this.plot_ToolStripContainer_BottomLeft.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_BottomLeft.Location = new System.Drawing.Point(4, 779);
+            this.plot_ToolStripContainer_BottomLeft.Name = "plot_ToolStripContainer_BottomLeft";
+            this.plot_ToolStripContainer_BottomLeft.Size = new System.Drawing.Size(1169, 768);
+            this.plot_ToolStripContainer_BottomLeft.TabIndex = 12;
+            this.plot_ToolStripContainer_BottomLeft.Text = "plot_ToolStripContainer1";
+            // 
+            // plot_ToolStripContainer_BottomMiddle
+            // 
+            this.plot_ToolStripContainer_BottomMiddle.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_BottomMiddle.ContentPanel
+            // 
+            this.plot_ToolStripContainer_BottomMiddle.ContentPanel.Size = new System.Drawing.Size(1169, 699);
+            this.plot_ToolStripContainer_BottomMiddle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_BottomMiddle.Location = new System.Drawing.Point(1180, 779);
+            this.plot_ToolStripContainer_BottomMiddle.Name = "plot_ToolStripContainer_BottomMiddle";
+            this.plot_ToolStripContainer_BottomMiddle.Size = new System.Drawing.Size(1169, 768);
+            this.plot_ToolStripContainer_BottomMiddle.TabIndex = 13;
+            this.plot_ToolStripContainer_BottomMiddle.Text = "plot_ToolStripContainer1";
+            // 
+            // plot_ToolStripContainer_BottomRight
+            // 
+            this.plot_ToolStripContainer_BottomRight.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
+            // 
+            // plot_ToolStripContainer_BottomRight.ContentPanel
+            // 
+            this.plot_ToolStripContainer_BottomRight.ContentPanel.Size = new System.Drawing.Size(1169, 699);
+            this.plot_ToolStripContainer_BottomRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.plot_ToolStripContainer_BottomRight.Location = new System.Drawing.Point(2356, 779);
+            this.plot_ToolStripContainer_BottomRight.Name = "plot_ToolStripContainer_BottomRight";
+            this.plot_ToolStripContainer_BottomRight.Size = new System.Drawing.Size(1169, 768);
+            this.plot_ToolStripContainer_BottomRight.TabIndex = 14;
+            this.plot_ToolStripContainer_BottomRight.Text = "plot_ToolStripContainer1";
             // 
             // tabPage1
             // 
@@ -147,7 +233,7 @@
             this.tabPage1.Location = new System.Drawing.Point(10, 47);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(3535, 1532);
+            this.tabPage1.Size = new System.Drawing.Size(3535, 1557);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "tabPage1";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -160,7 +246,7 @@
             this.tabControl1.Location = new System.Drawing.Point(3, 3);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(3555, 1589);
+            this.tabControl1.Size = new System.Drawing.Size(3555, 1614);
             this.tabControl1.SizeMode = System.Windows.Forms.TabSizeMode.FillToRight;
             this.tabControl1.TabIndex = 8;
             // 
@@ -170,7 +256,7 @@
             this.tabPage2.Location = new System.Drawing.Point(10, 47);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(3535, 1532);
+            this.tabPage2.Size = new System.Drawing.Size(3535, 1557);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "tabPage2";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -182,7 +268,7 @@
             this.panel_Plot.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel_Plot.Location = new System.Drawing.Point(3, 3);
             this.panel_Plot.Name = "panel_Plot";
-            this.panel_Plot.Size = new System.Drawing.Size(3529, 1526);
+            this.panel_Plot.Size = new System.Drawing.Size(3529, 1551);
             this.panel_Plot.TabIndex = 0;
             // 
             // plot_plotView
@@ -191,7 +277,7 @@
             this.plot_plotView.Location = new System.Drawing.Point(0, 0);
             this.plot_plotView.Name = "plot_plotView";
             this.plot_plotView.PanCursor = System.Windows.Forms.Cursors.Hand;
-            this.plot_plotView.Size = new System.Drawing.Size(3527, 1524);
+            this.plot_plotView.Size = new System.Drawing.Size(3527, 1549);
             this.plot_plotView.TabIndex = 0;
             this.plot_plotView.Text = "plotView1";
             this.plot_plotView.ZoomHorizontalCursor = System.Windows.Forms.Cursors.SizeWE;
@@ -210,19 +296,22 @@
             this.tableLayoutPanel_Back.RowCount = 2;
             this.tableLayoutPanel_Back.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel_Back.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 100F));
-            this.tableLayoutPanel_Back.Size = new System.Drawing.Size(3561, 1695);
+            this.tableLayoutPanel_Back.Size = new System.Drawing.Size(3561, 1720);
             this.tableLayoutPanel_Back.TabIndex = 9;
             // 
             // tableLayoutPanel_bottom
             // 
-            this.tableLayoutPanel_bottom.ColumnCount = 3;
+            this.tableLayoutPanel_bottom.ColumnCount = 4;
             this.tableLayoutPanel_bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 45F));
-            this.tableLayoutPanel_bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 10F));
+            this.tableLayoutPanel_bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 5F));
+            this.tableLayoutPanel_bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 5F));
             this.tableLayoutPanel_bottom.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 45F));
+            this.tableLayoutPanel_bottom.Controls.Add(this.flowLayoutPanel1, 3, 0);
+            this.tableLayoutPanel_bottom.Controls.Add(this.simulation_ProgressBar, 0, 0);
             this.tableLayoutPanel_bottom.Controls.Add(this.button_Run, 1, 0);
-            this.tableLayoutPanel_bottom.Controls.Add(this.flowLayoutPanel1, 2, 0);
+            this.tableLayoutPanel_bottom.Controls.Add(this.button_Pause, 2, 0);
             this.tableLayoutPanel_bottom.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel_bottom.Location = new System.Drawing.Point(3, 1598);
+            this.tableLayoutPanel_bottom.Location = new System.Drawing.Point(3, 1623);
             this.tableLayoutPanel_bottom.Name = "tableLayoutPanel_bottom";
             this.tableLayoutPanel_bottom.RowCount = 1;
             this.tableLayoutPanel_bottom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -233,7 +322,7 @@
             // 
             this.flowLayoutPanel1.Controls.Add(this.label_X);
             this.flowLayoutPanel1.Controls.Add(this.label_Y);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(1957, 3);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(1956, 3);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(485, 88);
             this.flowLayoutPanel1.TabIndex = 1;
@@ -256,6 +345,25 @@
             this.label_Y.Size = new System.Drawing.Size(59, 29);
             this.label_Y.TabIndex = 1;
             this.label_Y.Text = ", Y : ";
+            // 
+            // simulation_ProgressBar
+            // 
+            this.simulation_ProgressBar.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.simulation_ProgressBar.Location = new System.Drawing.Point(1148, 25);
+            this.simulation_ProgressBar.Name = "simulation_ProgressBar";
+            this.simulation_ProgressBar.Size = new System.Drawing.Size(448, 44);
+            this.simulation_ProgressBar.TabIndex = 2;
+            // 
+            // button_Pause
+            // 
+            this.button_Pause.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.button_Pause.Location = new System.Drawing.Point(1801, 18);
+            this.button_Pause.Name = "button_Pause";
+            this.button_Pause.Size = new System.Drawing.Size(126, 58);
+            this.button_Pause.TabIndex = 3;
+            this.button_Pause.Text = "Pause";
+            this.button_Pause.UseVisualStyleBackColor = true;
+            this.button_Pause.Click += new System.EventHandler(this.button_Pause_Click);
             // 
             // BottomToolStripPanel
             // 
@@ -306,7 +414,7 @@
             this.toolStripDropDownButton_Tools,
             this.toolStripSeparator4,
             this.toolStripDropDownButton_Help});
-            this.toolStrip_Main.Location = new System.Drawing.Point(3, 25);
+            this.toolStrip_Main.Location = new System.Drawing.Point(3, 0);
             this.toolStrip_Main.Name = "toolStrip_Main";
             this.toolStrip_Main.Size = new System.Drawing.Size(406, 44);
             this.toolStrip_Main.TabIndex = 1;
@@ -458,7 +566,7 @@
             // 
             this.toolStripContainer_Back.ContentPanel.Controls.Add(this.tableLayoutPanel_Back);
             this.toolStripContainer_Back.ContentPanel.Controls.Add(this.plot_SplitContainer1);
-            this.toolStripContainer_Back.ContentPanel.Size = new System.Drawing.Size(3561, 1695);
+            this.toolStripContainer_Back.ContentPanel.Size = new System.Drawing.Size(3561, 1720);
             this.toolStripContainer_Back.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer_Back.LeftToolStripPanelVisible = false;
             this.toolStripContainer_Back.Location = new System.Drawing.Point(0, 0);
@@ -470,101 +578,7 @@
             // 
             // toolStripContainer_Back.TopToolStripPanel
             // 
-            this.toolStripContainer_Back.TopToolStripPanel.Controls.Add(this.toolStrip1);
             this.toolStripContainer_Back.TopToolStripPanel.Controls.Add(this.toolStrip_Main);
-            // 
-            // toolStrip1
-            // 
-            this.toolStrip1.Dock = System.Windows.Forms.DockStyle.None;
-            this.toolStrip1.ImageScalingSize = new System.Drawing.Size(36, 36);
-            this.toolStrip1.Location = new System.Drawing.Point(39, 0);
-            this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(111, 25);
-            this.toolStrip1.TabIndex = 0;
-            // 
-            // plot_ToolStripContainer_TopMiddle
-            // 
-            this.plot_ToolStripContainer_TopMiddle.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_TopMiddle.ContentPanel
-            // 
-            this.plot_ToolStripContainer_TopMiddle.ContentPanel.Size = new System.Drawing.Size(1169, 686);
-            this.plot_ToolStripContainer_TopMiddle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_TopMiddle.Location = new System.Drawing.Point(1180, 4);
-            this.plot_ToolStripContainer_TopMiddle.Name = "plot_ToolStripContainer_TopMiddle";
-            this.plot_ToolStripContainer_TopMiddle.Size = new System.Drawing.Size(1169, 755);
-            this.plot_ToolStripContainer_TopMiddle.TabIndex = 10;
-            this.plot_ToolStripContainer_TopMiddle.Text = "plot_ToolStripContainer1";
-            // 
-            // plot_ToolStripContainer_TopLeft
-            // 
-            this.plot_ToolStripContainer_TopLeft.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_TopLeft.ContentPanel
-            // 
-            this.plot_ToolStripContainer_TopLeft.ContentPanel.Size = new System.Drawing.Size(1167, 684);
-            this.plot_ToolStripContainer_TopLeft.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_TopLeft.Location = new System.Drawing.Point(0, 0);
-            this.plot_ToolStripContainer_TopLeft.Name = "plot_ToolStripContainer_TopLeft";
-            this.plot_ToolStripContainer_TopLeft.Size = new System.Drawing.Size(1167, 753);
-            this.plot_ToolStripContainer_TopLeft.TabIndex = 0;
-            this.plot_ToolStripContainer_TopLeft.Text = "plot_ToolStripContainer1";
-            // 
-            // plot_ToolStripContainer_TopRight
-            // 
-            this.plot_ToolStripContainer_TopRight.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_TopRight.ContentPanel
-            // 
-            this.plot_ToolStripContainer_TopRight.ContentPanel.Size = new System.Drawing.Size(1169, 686);
-            this.plot_ToolStripContainer_TopRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_TopRight.Location = new System.Drawing.Point(2356, 4);
-            this.plot_ToolStripContainer_TopRight.Name = "plot_ToolStripContainer_TopRight";
-            this.plot_ToolStripContainer_TopRight.Size = new System.Drawing.Size(1169, 755);
-            this.plot_ToolStripContainer_TopRight.TabIndex = 11;
-            this.plot_ToolStripContainer_TopRight.Text = "plot_ToolStripContainer1";
-            // 
-            // plot_ToolStripContainer_BottomLeft
-            // 
-            this.plot_ToolStripContainer_BottomLeft.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_BottomLeft.ContentPanel
-            // 
-            this.plot_ToolStripContainer_BottomLeft.ContentPanel.Size = new System.Drawing.Size(1169, 687);
-            this.plot_ToolStripContainer_BottomLeft.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_BottomLeft.Location = new System.Drawing.Point(4, 766);
-            this.plot_ToolStripContainer_BottomLeft.Name = "plot_ToolStripContainer_BottomLeft";
-            this.plot_ToolStripContainer_BottomLeft.Size = new System.Drawing.Size(1169, 756);
-            this.plot_ToolStripContainer_BottomLeft.TabIndex = 12;
-            this.plot_ToolStripContainer_BottomLeft.Text = "plot_ToolStripContainer1";
-            // 
-            // plot_ToolStripContainer_BottomMiddle
-            // 
-            this.plot_ToolStripContainer_BottomMiddle.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_BottomMiddle.ContentPanel
-            // 
-            this.plot_ToolStripContainer_BottomMiddle.ContentPanel.Size = new System.Drawing.Size(1169, 687);
-            this.plot_ToolStripContainer_BottomMiddle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_BottomMiddle.Location = new System.Drawing.Point(1180, 766);
-            this.plot_ToolStripContainer_BottomMiddle.Name = "plot_ToolStripContainer_BottomMiddle";
-            this.plot_ToolStripContainer_BottomMiddle.Size = new System.Drawing.Size(1169, 756);
-            this.plot_ToolStripContainer_BottomMiddle.TabIndex = 13;
-            this.plot_ToolStripContainer_BottomMiddle.Text = "plot_ToolStripContainer1";
-            // 
-            // plot_ToolStripContainer_BottomRight
-            // 
-            this.plot_ToolStripContainer_BottomRight.Chosen_Plot = Quantization_Tool.Plot_Choice.Points;
-            // 
-            // plot_ToolStripContainer_BottomRight.ContentPanel
-            // 
-            this.plot_ToolStripContainer_BottomRight.ContentPanel.Size = new System.Drawing.Size(1169, 687);
-            this.plot_ToolStripContainer_BottomRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.plot_ToolStripContainer_BottomRight.Location = new System.Drawing.Point(2356, 766);
-            this.plot_ToolStripContainer_BottomRight.Name = "plot_ToolStripContainer_BottomRight";
-            this.plot_ToolStripContainer_BottomRight.Size = new System.Drawing.Size(1169, 756);
-            this.plot_ToolStripContainer_BottomRight.TabIndex = 14;
-            this.plot_ToolStripContainer_BottomRight.Text = "plot_ToolStripContainer1";
             // 
             // plot_SplitContainer1
             // 
@@ -576,9 +590,16 @@
             this.plot_SplitContainer1.Name = "plot_SplitContainer1";
             this.plot_SplitContainer1.Panel1Collapsed = true;
             this.plot_SplitContainer1.Panel1MinSize = 100;
-            this.plot_SplitContainer1.Size = new System.Drawing.Size(3561, 1695);
+            this.plot_SplitContainer1.Size = new System.Drawing.Size(3561, 1720);
             this.plot_SplitContainer1.SplitterDistance = 100;
             this.plot_SplitContainer1.TabIndex = 0;
+            // 
+            // backgroundWorker_Simulation
+            // 
+            this.backgroundWorker_Simulation.WorkerReportsProgress = true;
+            this.backgroundWorker_Simulation.WorkerSupportsCancellation = true;
+            this.backgroundWorker_Simulation.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker_Simulation_DoWork);
+            this.backgroundWorker_Simulation.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker_Simulation_ProgressChanged);
             // 
             // Form1
             // 
@@ -589,7 +610,19 @@
             this.Name = "Form1";
             this.Text = "Form1";
             this.tableLayoutPanel_Plots.ResumeLayout(false);
+            this.plot_ToolStripContainer_TopMiddle.ResumeLayout(false);
+            this.plot_ToolStripContainer_TopMiddle.PerformLayout();
             this.topLeft_panel.ResumeLayout(false);
+            this.plot_ToolStripContainer_TopLeft.ResumeLayout(false);
+            this.plot_ToolStripContainer_TopLeft.PerformLayout();
+            this.plot_ToolStripContainer_TopRight.ResumeLayout(false);
+            this.plot_ToolStripContainer_TopRight.PerformLayout();
+            this.plot_ToolStripContainer_BottomLeft.ResumeLayout(false);
+            this.plot_ToolStripContainer_BottomLeft.PerformLayout();
+            this.plot_ToolStripContainer_BottomMiddle.ResumeLayout(false);
+            this.plot_ToolStripContainer_BottomMiddle.PerformLayout();
+            this.plot_ToolStripContainer_BottomRight.ResumeLayout(false);
+            this.plot_ToolStripContainer_BottomRight.PerformLayout();
             this.tabPage1.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
@@ -605,18 +638,6 @@
             this.toolStripContainer_Back.TopToolStripPanel.PerformLayout();
             this.toolStripContainer_Back.ResumeLayout(false);
             this.toolStripContainer_Back.PerformLayout();
-            this.plot_ToolStripContainer_TopMiddle.ResumeLayout(false);
-            this.plot_ToolStripContainer_TopMiddle.PerformLayout();
-            this.plot_ToolStripContainer_TopLeft.ResumeLayout(false);
-            this.plot_ToolStripContainer_TopLeft.PerformLayout();
-            this.plot_ToolStripContainer_TopRight.ResumeLayout(false);
-            this.plot_ToolStripContainer_TopRight.PerformLayout();
-            this.plot_ToolStripContainer_BottomLeft.ResumeLayout(false);
-            this.plot_ToolStripContainer_BottomLeft.PerformLayout();
-            this.plot_ToolStripContainer_BottomMiddle.ResumeLayout(false);
-            this.plot_ToolStripContainer_BottomMiddle.PerformLayout();
-            this.plot_ToolStripContainer_BottomRight.ResumeLayout(false);
-            this.plot_ToolStripContainer_BottomRight.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.plot_SplitContainer1)).EndInit();
             this.plot_SplitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -659,7 +680,6 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem_About;
         private System.Windows.Forms.ToolStripContainer toolStripContainer_Back;
         private Plot_SplitContainer plot_SplitContainer1;
-        private System.Windows.Forms.ToolStrip toolStrip1;
         private Plot_ToolStripContainer plot_ToolStripContainer_TopMiddle;
         private Plot_ToolStripContainer plot_ToolStripContainer_TopLeft;
         private Plot_ToolStripContainer plot_ToolStripContainer_TopRight;
@@ -671,6 +691,9 @@
         private System.Windows.Forms.ToolStripPanel RightToolStripPanel;
         private System.Windows.Forms.ToolStripPanel LeftToolStripPanel;
         private System.Windows.Forms.ToolStripContentPanel ContentPanel;
+        private System.Windows.Forms.ProgressBar simulation_ProgressBar;
+        private System.ComponentModel.BackgroundWorker backgroundWorker_Simulation;
+        private System.Windows.Forms.Button button_Pause;
     }
 }
 

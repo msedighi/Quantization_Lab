@@ -5,18 +5,23 @@ using System.Text;
 using System.Threading.Tasks;
 using WrapperClass;
 using System.Runtime.InteropServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace Quantization_Tool
 {
-    class Simulation
+    public class Simulation
     {
-        public double Time_Range, dt = 0.005; //Default
+        public double Time_Range;
+        public double dt = 0.005; //Default
         //private int Num_TimeSteps = 1;
 
-        public double[] Coordinate_Range, Speed_Range;
+        public double[] Coordinate_Range;
+        public double[] Speed_Range;
 
         WrapperClass.Quantization Q;
         Output_Variables Out;
+        [XmlIgnore]
         public Tile_Variables Tile;
 
         GCHandle[] handle_Positions;
@@ -50,6 +55,8 @@ namespace Quantization_Tool
                 }
             }
         }
+
+        public Simulation() { }
 
         public Output_Variables Evolve(State_Variables state, bool eigenvectors_flag, bool perturb_flag, bool smooth_flag)
         {
@@ -96,10 +103,10 @@ namespace Quantization_Tool
                             }
                             for (uint j_p = 0; j_p < state.Num_Points; j_p++)
                             {
-                                Out.Laplacian_Orthonormal_Transformation[i_s][i_p, j_p] = Q.Laplacian_Orthonormal_Transformation[i_s][i_p][j_p];
-                                Out.Energy_Orthonormal_Transformation[i_s][i_p, j_p] = Q.Energy_Orthonormal_Transformation[i_s][i_p][j_p];
-                                Out.Commutator_Orthonormal_Transformation_Real[i_s][i_p, j_p] = Q.Commutator_Orthonormal_Transformation_Real[i_s][i_p][j_p];
-                                Out.Commutator_Orthonormal_Transformation_Imag[i_s][i_p, j_p] = Q.Commutator_Orthonormal_Transformation_Imag[i_s][i_p][j_p];
+                                Out.Laplacian_Orthonormal_Transformation[i_s][i_p][j_p] = Q.Laplacian_Orthonormal_Transformation[i_s][i_p][j_p];
+                                Out.Energy_Orthonormal_Transformation[i_s][i_p][j_p] = Q.Energy_Orthonormal_Transformation[i_s][i_p][j_p];
+                                Out.Commutator_Orthonormal_Transformation_Real[i_s][i_p][j_p] = Q.Commutator_Orthonormal_Transformation_Real[i_s][i_p][j_p];
+                                Out.Commutator_Orthonormal_Transformation_Imag[i_s][i_p][j_p] = Q.Commutator_Orthonormal_Transformation_Imag[i_s][i_p][j_p];
                             }
                         }
                     }
@@ -117,14 +124,15 @@ namespace Quantization_Tool
 
                     Out.ClassicalLaplacian_Energy[i_p] = Q.ClassicalLaplacian_Energy[i_p];
                     Out.ClassicalHamiltonian_Energy[i_p] = Q.ClassicalHamiltonian_Energy[i_p];
-
+                    Out.ClassicalHamiltonian_wVacuum_Energy[i_p] = Q.ClassicalHamiltonian_wVacuum_Energy[i_p];
                     for (uint j_p = 0; j_p < state.Num_Points; j_p++)
                     {
                         Out.Dendogram_Original[i_p][j_p] = Q.Dendogram_Original[i_p][j_p];
                         Out.Dendogram_Dual[i_p][j_p] = Q.Dendogram_Dual[i_p][j_p];
 
-                        Out.ClassicalHamiltonian_EigenStates[i_p, j_p] = Q.ClassicalHamiltonian_EigenStates[i_p][j_p];
-                        Out.ClassicalLaplacian_EigenStates[i_p, j_p] = Q.ClassicalLaplacian_EigenStates[i_p][j_p];
+                        Out.ClassicalHamiltonian_EigenStates[i_p][j_p] = Q.ClassicalHamiltonian_EigenStates[i_p][j_p];
+                        Out.ClassicalHamiltonian_wVacuum_EigenStates[i_p][j_p] = Q.ClassicalHamiltonian_wVacuum_EigenStates[i_p][j_p];
+                        Out.ClassicalLaplacian_EigenStates[i_p][j_p] = Q.ClassicalLaplacian_EigenStates[i_p][j_p];
                     }
                 }
 

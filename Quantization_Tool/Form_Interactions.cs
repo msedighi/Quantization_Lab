@@ -145,6 +145,18 @@ namespace Quantization_Tool
             }
         }
 
+        private bool _RunButton_State;
+        private bool _PauseButton_State;
+        public bool RunButton_State
+        {
+            get { return _RunButton_State; }
+            set { _RunButton_State = value; }
+        }
+        public bool PauseButton_State
+        {
+            get { return _PauseButton_State; }
+            set { _PauseButton_State = value; }
+        }
         private void button_Run_Click(object sender, EventArgs e)
         {
             RunButton_State = !RunButton_State;
@@ -152,12 +164,32 @@ namespace Quantization_Tool
             {
                 button_Run.Text = "Stop";
                 MRE.Set();
+
+                simulation_ProgressBar.Value = 0;
+                backgroundWorker_Simulation.RunWorkerAsync();
             }
             else
             {
                 button_Run.Text = "Run";
-                //Thread.Sleep(2000);
+
+                simulation_ProgressBar.Value = 0;
+                backgroundWorker_Simulation.CancelAsync();
+                //MRE.Reset();
+            }
+
+        }
+        private void button_Pause_Click(object sender, EventArgs e)
+        {
+            PauseButton_State = !PauseButton_State;
+            if (PauseButton_State)
+            {
+                button_Pause.Text = "Continue";
                 MRE.Reset();
+            }
+            else
+            {
+                button_Pause.Text = "Pause";
+                MRE.Set();
             }
 
         }

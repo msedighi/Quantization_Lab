@@ -173,6 +173,7 @@ Global_Variables* Collective_Variables(Interaction* interaction, double** positi
 	MatrixXd positions_matrix = MatrixXd::Constant(num_points, dim, 0);
 	MatrixXd velocities_matrix = MatrixXd::Constant(num_points, dim, 0);
 	MatrixXd momentum_matrix = MatrixXd::Constant(num_points, dim, 0);
+	VectorXd mass_vector = VectorXd::Constant(num_points, 0);
 
 	MatrixXd local_force_matrix = MatrixXd::Constant(num_points, dim, 0);
 
@@ -180,6 +181,7 @@ Global_Variables* Collective_Variables(Interaction* interaction, double** positi
 	Force_Operator(interaction, positions, num_points, dim, local_force);
 	for (int i = 0; i < num_points; i++)
 	{
+		mass_vector[i] = masses[i];
 		for (int j = 0; j < dim; j++)
 		{
 			positions_matrix(i, j) = positions[i][j];
@@ -194,6 +196,7 @@ Global_Variables* Collective_Variables(Interaction* interaction, double** positi
 	collective_variables->Global_Velocities = orthogonal_transformation.transpose() * velocities_matrix;
 	collective_variables->Global_Momentum = orthogonal_transformation.transpose() * momentum_matrix;
 
+	VectorXd global_mass_vector = orthogonal_transformation.transpose() * mass_vector;
 	MatrixXd global_forces = orthogonal_transformation.transpose() * local_force_matrix;
 
 	for (int i = 0; i < num_points; i++)
