@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.IO;
 using OxyPlot;
+using OxyPlot.Wpf;
 
 namespace Quantization_Tool
 {
@@ -28,6 +29,14 @@ namespace Quantization_Tool
         private OxyPlot.Series.ScatterSeries ClassicalEnergy_Time = new OxyPlot.Series.ScatterSeries();
         private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonianTime_Data;
         private EnergyTimePlotWiring ClassicalHamiltonianTimePlot_Wiring;
+
+        private PlotModel ClassicalHamiltonianVacuumTime_Plot = new PlotModel();
+        private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonianVacuumTime_Data;
+        private DataPlotWiring ClassicalHamiltonianVacuumTimePlot_Wiring;
+
+        private PlotModel[] ClassicalHamiltonianStatesTime_Plot;
+        private OxyPlot.Series.ScatterSeries[][] ClassicalHamiltonianStatesTime_Data;
+        private DataPlotWiring[] ClassicalHamiltonianStatesTimePlot_Wiring;
 
         private PlotModel ClassicalHamiltonian_wVacuumTime_Plot = new PlotModel();
         private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonian_wVacuum_Time_Data;
@@ -135,12 +144,14 @@ namespace Quantization_Tool
         private int TimeLimit_4plot;
         private int SimTime_Counter;
         private ManualResetEvent MRE;
-        private Thread Sim_Thread;
-        private Thread Graph_Thread;
+        //private Thread Graph_Thread;
 
         private string mydoc_path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         private string output_dir = "D:\\Projects\\Quantization_Log";
         private string output_path;
+        private string output_path_out;
+        private string output_path_state;
+        private string output_path_image;
         private Data_Output DO = new Data_Output();
 
         public Form1()
@@ -149,7 +160,7 @@ namespace Quantization_Tool
 
             // Initialize Values
             Random rand = new Random();
-            int _Num_Points = 6;
+            int _Num_Points = 26;
             int _Dimension = 2;
             //int _Num_ScaleBins = 200;
             int _Num_ScaleBins = 20;
@@ -178,7 +189,7 @@ namespace Quantization_Tool
                 Sim_Variables.Speed_Range[i_d] = 2.0;
             }
 
-            Sim_Variables.Time_Range = 2.0;
+            Sim_Variables.Time_Range = 5.0;
 
             // This:
             Sim_Variables.dt = 0.002;
@@ -188,38 +199,74 @@ namespace Quantization_Tool
             // Num_Time_Bins = (uint)(Time_Range / dt);
             // dt = (double)(Time_Range / Num_Time_Bins);
 
-            State.Mass_Ratio_Max = 10.0; // Default (should be > 1)            
-            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            if (true)
             {
-                // This:
-                State.Mass_Ratios[i_p] = 1.0;
-                // Or, 
-                // Ask Mass_Ratio_Max (should be > 1) :
-                //State.Mass_Ratios[i_p] = (State.Mass_Ratio_Max - 1.0) * rand.NextDouble() + 1.0;
-                // Or,
-                // Ask all the Mass Ratios!
-            }
+                double Total_Mass = 0;
+                State.Mass_Ratio_Max = 10.0; // Default (should be > 1)            
+                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                {
+                    // This:
+                    State.Mass_Ratios[i_p] = 1.0;
+                    // Or, 
+                    // Ask Mass_Ratio_Max (should be > 1) :
+                    //State.Mass_Ratios[i_p] = (State.Mass_Ratio_Max - 1.0) * rand.NextDouble() + 1.0;
+                    // Or,
+                    // Ask all the Mass Ratios!
 
-            double Hubble = 0;
-            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-            {
+                    Total_Mass += State.Mass_Ratios[i_p];
+                }
+
+                double Hubble = 0;
                 for (uint i_d = 0; i_d < State.Dimension; i_d++)
                 {
-                    State.Positions[i_p][i_d] = Sim_Variables.Coordinate_Range[i_d] * (rand.NextDouble() - 0.5);
-                    State.Velocities[i_p][i_d] = Sim_Variables.Speed_Range[i_d] * (rand.NextDouble() - 0.5);
-                    //State.Velocities[i_p][i_d] = Hubble * State.Positions[i_p][i_d];
+                    State.CenterMass_Velocity[i_d] = 0;
+                    for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                    {
+                        State.Positions[i_p][i_d] = Sim_Variables.Coordinate_Range[i_d] * (rand.NextDouble() - 0.5);
+                        State.Velocities[i_p][i_d] = Sim_Variables.Speed_Range[i_d] * (rand.NextDouble() - 0.5);
+                        //State.Velocities[i_p][i_d] = Hubble * State.Positions[i_p][i_d];
 
-                    Initial_State.Positions[i_p][i_d] = State.Positions[i_p][i_d];
-                    Initial_State.Velocities[i_p][i_d] = State.Velocities[i_p][i_d];
+                        State.CenterMass_Velocity[i_d] += State.Mass_Ratios[i_p] * State.Velocities[i_p][i_d];
+                    }
+
+                    State.CenterMass_Velocity[i_d] = State.CenterMass_Velocity[i_d] / Total_Mass;
+                }
+                // Working in Center of Mass frame of refference
+                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                {
+                    for (uint i_d = 0; i_d < State.Dimension; i_d++)
+                    {
+                        State.Velocities[i_p][i_d] = State.Velocities[i_p][i_d] - State.CenterMass_Velocity[i_d];
+                        Initial_State.Positions[i_p][i_d] = State.Positions[i_p][i_d];
+                        Initial_State.Velocities[i_p][i_d] = State.Velocities[i_p][i_d];
+                    }
+                }
+            }
+            else
+            {
+                State = DO.Sate_XML(output_dir + "\\212\\State_Input.txt");
+                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                {
+                    for (uint i_d = 0; i_d < State.Dimension; i_d++)
+                    {
+                        State.Velocities[i_p][i_d] = State.Velocities[i_p][i_d] + 3.5*State.CenterMass_Velocity[i_d];
+                    }
                 }
             }
 
             output_Variables = new Output_Variables(State);
 
             // Writing to Files
+            // NOTE: ***************** This should only be done when a new simulation is saved not when the form loads ***********
             string[] dirs = Directory.GetDirectories(output_dir,"*", SearchOption.TopDirectoryOnly);
             output_path = output_dir + "\\" + (dirs.Length + 1).ToString();
+            output_path_out = output_path + "\\Out";
+            output_path_state = output_path + "\\State";
+            output_path_image = output_path + "\\Image";
             Directory.CreateDirectory(output_path);
+            Directory.CreateDirectory(output_path_out);
+            Directory.CreateDirectory(output_path_state);
+            Directory.CreateDirectory(output_path_image);
             string State_FileName = output_path + "\\State_Input.txt";
             string Simulation_FileName = output_path + "\\Simulation_Input.txt";
 
@@ -248,7 +295,6 @@ namespace Quantization_Tool
             }
 
             PointsPlot_Wiring = new PointsPlotWiring(Points_Plot, Points_Data);
-            plot_ToolStripContainer_BottomRight.Attach(Points_Plot);
             PointsPlot_Wiring.Activate();
             //
 
@@ -279,12 +325,24 @@ namespace Quantization_Tool
 
             // Classical Energy Plots
             Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianTime_Plot, "Classical Hamitonian");
-            Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonian_wVacuumTime_Plot, "Classical Hamitonian w/ Vaccum");
+            Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianVacuumTime_Plot, "Classical Hamiltonian Vacuum");
+            Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonian_wVacuumTime_Plot, "Classical Kinetic-Potential Commutator");
             Initialize_ClassicalEnergyTimePlot(ClassicalLaplacianTime_Plot, "Classical Laplacian");
             Initialize_ClassicalEnergyTimePlot(ClassicalPotentialEnergyTime_Plot, "Potential Energy");
             Initialize_ClassicalEnergyTimePlot(ClassicalKineticEnergyTime_Plot, "Kinetic Energy");
             Initialize_ClassicalEnergyTimePlot(ClassicalEnergyExchangeTime_Plot, "Energy Exchange");
             Initialize_ClassicalEnergyTimePlot(ClassicalEnergyTime_Plot, "Classical Energy");
+
+            ClassicalHamiltonianStatesTime_Plot = new PlotModel[6]; // Only for 6 Eigen States
+            for (uint i_p = 0; i_p < 6; i_p++)
+            {
+                ClassicalHamiltonianStatesTime_Plot[i_p] = new PlotModel();
+                if (i_p < 3)
+                    Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianStatesTime_Plot[i_p], "Classical Hamiltonian State " + i_p.ToString()); // First 3 States
+                else
+                    Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianStatesTime_Plot[i_p], "Classical Hamiltonian State " + (State.Num_Points - i_p + 2).ToString()); // Last 3 States
+            }
+
 
             ClassicalHamiltonianTime_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
             for (uint i_p = 0; i_p < State.Num_Points; i_p++)
@@ -292,6 +350,14 @@ namespace Quantization_Tool
                 ClassicalHamiltonianTime_Data[i_p] = new OxyPlot.Series.ScatterSeries();
                 ClassicalHamiltonianTime_Data[i_p].MarkerType = MarkerType.Circle;
                 ClassicalHamiltonianTime_Data[i_p].MarkerSize = 3;
+                //ClassicalHamiltonianTime_Data[i_p].MarkerFill = OxyColors.Black;
+            }
+            ClassicalHamiltonianVacuumTime_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalHamiltonianVacuumTime_Data[i_p] = new OxyPlot.Series.ScatterSeries();
+                ClassicalHamiltonianVacuumTime_Data[i_p].MarkerType = MarkerType.Circle;
+                ClassicalHamiltonianVacuumTime_Data[i_p].MarkerSize = 3;
                 //ClassicalHamiltonianTime_Data[i_p].MarkerFill = OxyColors.Black;
             }
             ClassicalEnergy_Time.MarkerType = MarkerType.Circle;
@@ -305,6 +371,18 @@ namespace Quantization_Tool
                 ClassicalHamiltonian_wVacuum_Time_Data[i_p].MarkerType = MarkerType.Circle;
                 ClassicalHamiltonian_wVacuum_Time_Data[i_p].MarkerSize = 3;
                 ClassicalHamiltonian_wVacuum_Time_Data[i_p].MarkerFill = OxyColors.Black;
+            }
+
+            ClassicalHamiltonianStatesTime_Data = new OxyPlot.Series.ScatterSeries[6][];
+            for (uint j_p = 0; j_p < 6; j_p++)
+            {
+                ClassicalHamiltonianStatesTime_Data[j_p] = new OxyPlot.Series.ScatterSeries[State.Num_Points];
+                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                {
+                    ClassicalHamiltonianStatesTime_Data[j_p][i_p] = new OxyPlot.Series.ScatterSeries();
+                    ClassicalHamiltonianStatesTime_Data[j_p][i_p].MarkerType = MarkerType.Circle;
+                    ClassicalHamiltonianStatesTime_Data[j_p][i_p].MarkerSize = 3;
+                }
             }
 
             ClassicalLaplacianTime_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
@@ -361,15 +439,10 @@ namespace Quantization_Tool
             ClassicalTotalEnergy_Time.MarkerSize = 3;
             ClassicalTotalEnergy_Time.MarkerFill = OxyColors.Black;
 
-            plot_ToolStripContainer_TopMiddle.Attach(ClassicalHamiltonianTime_Plot);
-            plot_ToolStripContainer_TopLeft.Attach(ClassicalLaplacianTime_Plot);
-            plot_ToolStripContainer_TopRight.Attach(ClassicalHamiltonian_wVacuumTime_Plot);
-            //plot_ToolStripContainer_TopRight.Attach(ClassicalPotentialEnergyTime_Plot);
-            //plot_ToolStripContainer_BottomRight.Attach(ClassicalKineticEnergyTime_Plot);
-            plot_ToolStripContainer_BottomMiddle.Attach(ClassicalEnergyExchangeTime_Plot);
-            plot_ToolStripContainer_BottomLeft.Attach(ClassicalEnergyTime_Plot);
+            Attach_Graphs();
 
             ClassicalHamiltonianTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalHamiltonianTime_Plot, ClassicalHamiltonianTime_Data, ClassicalEnergy_Time);
+            ClassicalHamiltonianVacuumTimePlot_Wiring = new DataPlotWiring(ClassicalHamiltonianVacuumTime_Plot, ClassicalHamiltonianVacuumTime_Data);
             ClassicalHamiltonian_wVacuumTimePlot_Wiring = new DataPlotWiring(ClassicalHamiltonian_wVacuumTime_Plot, ClassicalHamiltonian_wVacuum_Time_Data);
             ClassicalLaplacianTimePlot_Wiring = new DataPlotWiring(ClassicalLaplacianTime_Plot, ClassicalLaplacianTime_Data);
             ClassicalPotentialEnergyTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalPotentialEnergyTime_Plot, ClassicalPotentialEnergyTime_Data, ClassicalTotalPotentialEnergy_Time);
@@ -377,7 +450,16 @@ namespace Quantization_Tool
             ClassicalEnergyExchangeTimePlot_Wiring = new DataPlotWiring(ClassicalEnergyExchangeTime_Plot, ClassicalEnergyExchangeTime_Data);
             ClassicalEnergyTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalEnergyTime_Plot, ClassicalEnergyTime_Data, ClassicalTotalEnergy_Time);
 
+            ClassicalHamiltonianStatesTimePlot_Wiring = new DataPlotWiring[6]; //Only Plot of the First & Last 3 Eigen States (i.e. only 6 States)
+            for (uint i_p = 0; i_p < 6; i_p++)
+            {
+                ClassicalHamiltonianStatesTimePlot_Wiring[i_p] = new DataPlotWiring(ClassicalHamiltonianStatesTime_Plot[i_p], ClassicalHamiltonianStatesTime_Data[i_p]);
+                ClassicalHamiltonianStatesTimePlot_Wiring[i_p].Activate();
+            }
+
+
             ClassicalHamiltonianTimePlot_Wiring.Activate();
+            ClassicalHamiltonianVacuumTimePlot_Wiring.Activate();
             ClassicalHamiltonian_wVacuumTimePlot_Wiring.Activate();
             ClassicalLaplacianTimePlot_Wiring.Activate();
             ClassicalPotentialEnergyTimePlot_Wiring.Activate();
@@ -433,7 +515,7 @@ namespace Quantization_Tool
             EnergyScale_Commutator_HeatMap.Y0 = -State.Num_EnergyBins;
             EnergyScale_Commutator_HeatMap.Y1 = State.Num_EnergyBins;
 
-            plot_plotView.Model = EnergyScale_Laplacian_HeatMap_Plot;
+            //plot_plotView.Model = EnergyScale_Laplacian_HeatMap_Plot;
             //topRight_plotView.Model = EnergyScale_Laplacian_HeatMap_Plot;
             Initialize_EnergyScaleHeatMap(EnergyScale_Laplacian_HeatMap_Plot, EnergyScale_Laplacian_HeatMap, State);
             EnergyScale_Laplacian_HeatMap_Plot.Title = "Laplacian Energy vs Scale";
@@ -456,35 +538,221 @@ namespace Quantization_Tool
             // Threading
             MRE = new ManualResetEvent(false);
 
-           
-            //Sim_Thread = new Thread(new ThreadStart(Run_Simulation));
-            //Sim_Thread.IsBackground = true;
 
             //Graph_Thread = new Thread(new ThreadStart(Plot_Graphs));
             //Graph_Thread.IsBackground = true;
 
-            // Running the Simulation Thread
-            //Sim_Thread.Start();
             // Running the Graph Thread
             //Graph_Thread.Start();
 
-            //Plot_Graphs();
+        }
+
+        private void RePlot_Graphs()
+        {
+            Clear_Graphs();
+            Refresh_Graphs();
+
+            for (int t = 0; t < (Sim_Variables.Time_Range/Sim_Variables.dt); t++)
+            {
+                
+                string output_filename = output_dir + "\\1\\Out\\Quantization_Output_" + t + ".txt";
+                string state_filename = output_dir + "\\1\\State\\Quantization_Output_" + t + ".txt";
+                //string output_filename = output_path_out + "\\Quantization_Output_" + t + ".txt";
+                Output_Variables current_output = DO.Output_XML(output_filename);
+                State_Variables current_state = DO.Sate_XML(state_filename);
+
+                Plot_Graphs(t, current_state, current_output);
+
+                // Refreshing Graphs
+                Refresh_Graphs();
+                
+                string output_imagefile = output_dir + "\\1\\Image\\Quantization_" + t + ".png";
+                PngExporter pngExporter = new PngExporter { Background = OxyColors.White };
+                pngExporter.ExportToFile(Points_Plot, output_imagefile);
+
+            }
+        }
+
+        private void Clear_Graphs()
+        {
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                Points_Data[i_p].Points.Clear();
+            }
+
+            ClassicalEnergy_Time.Points.Clear();
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalHamiltonianTime_Data[i_p].Points.Clear();
+                ClassicalHamiltonianVacuumTime_Data[i_p].Points.Clear();
+            }
+
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalHamiltonian_wVacuum_Time_Data[i_p].Points.Clear();
+            }
+
+            for (uint j_p = 0; j_p < 6; j_p++)
+                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                {
+                    ClassicalHamiltonianStatesTime_Data[j_p][i_p].Points.Clear();
+                }
+
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalLaplacianTime_Data[i_p].Points.Clear();
+            }
+
+            ClassicalTotalPotentialEnergy_Time.Points.Clear();
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalPotentialEnergyTime_Data[i_p].Points.Clear();
+            }
+
+            ClassicalTotalKineticEnergy_Time.Points.Clear();
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalKineticEnergyTime_Data[i_p].Points.Clear();
+            }
+
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalEnergyExchangeTime_Data[i_p].Points.Clear();
+            }
+
+            ClassicalTotalEnergy_Time.Points.Clear();
+            for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+            {
+                ClassicalEnergyTime_Data[i_p].Points.Clear();
+            }
+        }
+
+        private void Refresh_Graphs()
+        {
+            if (false)
+            {
+                ScaleTime_Plot.InvalidatePlot(true);
+                Tile_Plot.InvalidatePlot(true);
+
+                EnergyScale_Laplacian_Plot.InvalidatePlot(true);
+                EnergyScale_Commutator_Plot.InvalidatePlot(true);
+                EnergyScale_Plot.InvalidatePlot(true);
+                MassScale_Plot.InvalidatePlot(true);
+
+                ClassicalPotentialEnergyTime_Plot.InvalidatePlot(true);
+                ClassicalKineticEnergyTime_Plot.InvalidatePlot(true);
+
+                EnergyScale_Laplacian_HeatMap_Plot.InvalidatePlot(true);
+                EnergyScale_Commutator_HeatMap_Plot.InvalidatePlot(true);
+                EnergyScale_HeatMap_Plot.InvalidatePlot(true);
+                MassScale_HeatMap_Plot.InvalidatePlot(true);
+            }
+
+            Points_Plot.InvalidatePlot(true);
+
+            ClassicalHamiltonianTime_Plot.InvalidatePlot(true);
+            ClassicalHamiltonianVacuumTime_Plot.InvalidatePlot(true);
+            ClassicalHamiltonian_wVacuumTime_Plot.InvalidatePlot(true);
+            ClassicalLaplacianTime_Plot.InvalidatePlot(true);
+            ClassicalEnergyExchangeTime_Plot.InvalidatePlot(true);
+            ClassicalEnergyTime_Plot.InvalidatePlot(true);
+            for (uint i_p = 0; i_p < 6; i_p++)
+            {
+                ClassicalHamiltonianStatesTime_Plot[i_p].InvalidatePlot(true);
+            }
+
+            //EnergyScale_LaplacianDerivative_Plot_smoothed.InvalidatePlot(true);
+            //EnergyScale_LaplacianDerivative_Plot.InvalidatePlot(true);
 
         }
 
-        private void Plot_Graphs(int t)
+        private void Attach_Graphs()
         {
-            string output_filename;
-            Output_Variables current_output;
-            //int t = 0;
-            //while (t < SimTime_Counter)
-            //{
-            //    MRE.WaitOne();
+            plot_ToolStripContainer_TopRight.Attach(ClassicalHamiltonian_wVacuumTime_Plot);
+            //plot_ToolStripContainer_TopRight.Attach(ClassicalPotentialEnergyTime_Plot);
+            plot_ToolStripContainer_TopMiddle.Attach(ClassicalHamiltonianTime_Plot);
+            plot_ToolStripContainer_TopLeft.Attach(ClassicalHamiltonianVacuumTime_Plot);
+            //plot_ToolStripContainer_TopLeft.Attach(ClassicalLaplacianTime_Plot);
+            //plot_ToolStripContainer_BottomRight.Attach(ClassicalKineticEnergyTime_Plot);
+            plot_ToolStripContainer_BottomRight.Attach(Points_Plot);
+            plot_ToolStripContainer_BottomMiddle.Attach(ClassicalEnergyExchangeTime_Plot);
+            plot_ToolStripContainer_BottomLeft.Attach(ClassicalEnergyTime_Plot);
 
-            //    t++;
-                output_filename = output_path + "\\Quantization_Output_" + t + ".txt";
-                current_output = DO.Output_XML(output_filename);
+            plot_ToolStripContainer1.Attach(ClassicalHamiltonianStatesTime_Plot[0]);
+            plot_ToolStripContainer2.Attach(ClassicalHamiltonianStatesTime_Plot[1]);
+            plot_ToolStripContainer3.Attach(ClassicalHamiltonianStatesTime_Plot[2]);
+            plot_ToolStripContainer4.Attach(ClassicalHamiltonianStatesTime_Plot[3]);
+            plot_ToolStripContainer5.Attach(ClassicalHamiltonianStatesTime_Plot[4]);
+            plot_ToolStripContainer6.Attach(ClassicalHamiltonianStatesTime_Plot[5]);
+        }
 
+        private void Plot_Graphs(int t, State_Variables current_state, Output_Variables current_OutputVariables)
+        {
+
+            // Points Plot
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                Points_Data[i_p].Points.Clear();
+
+                if (current_state.Dimension == 1)
+                    Points_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(current_state.Positions[i_p][0], 0));
+                else
+                    Points_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(current_state.Positions[i_p][0], current_state.Positions[i_p][1]));
+            }
+
+            // Classical energy plots
+            ClassicalEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalEnergy));
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalHamiltonianTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_Energy[i_p]));
+                ClassicalHamiltonianVacuumTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_Vacuum[i_p]));
+            }
+
+            for (uint j_p = 0; j_p < 6; j_p++)
+                for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+                {
+                    if (j_p < 3)
+                        ClassicalHamiltonianStatesTime_Data[j_p][i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_EigenStates[i_p][j_p] * current_OutputVariables.ClassicalHamiltonian_EigenStates[i_p][j_p]));
+                    else
+                        ClassicalHamiltonianStatesTime_Data[j_p][i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_EigenStates[i_p][State.Num_Points - j_p + 2] * current_OutputVariables.ClassicalHamiltonian_EigenStates[i_p][State.Num_Points - j_p + 2]));
+                }
+
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalHamiltonian_wVacuum_Time_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_wVacuum_Energy[i_p]));
+            }
+
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalLaplacianTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalLaplacian_Energy[i_p]));
+            }
+
+            ClassicalTotalPotentialEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalPotentialEnergy));
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalPotentialEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.PotentialEnergy_Vector[i_p]));
+            }
+
+            ClassicalTotalKineticEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalKineticEnergy));
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalKineticEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.KineticEnergy_Vector[i_p]));
+            }
+
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalEnergyExchangeTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalEnergy_Exchange[i_p]));
+            }
+
+            ClassicalTotalEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalEnergy));
+            for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
+            {
+                ClassicalEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalEnergy_Vector[i_p]));
+            }
+            //
+
+            if (false)
+            {
                 if (t > TimeLimit_4plot)
                 {
                     ScaleTime_MinScale.Points.RemoveAt(0);
@@ -492,88 +760,41 @@ namespace Quantization_Tool
                     ScaleTime_Max_NonVacScale.Points.RemoveAt(0);
                     ScaleTime_MaxScale.Points.RemoveAt(0);
                 }
-                ScaleTime_MinScale.Points.Add(new DataPoint(t, current_output.Min_Scale));
-                ScaleTime_Min_NonVacScale.Points.Add(new DataPoint(t, current_output.Min_NonVacScale));
-                ScaleTime_Max_NonVacScale.Points.Add(new DataPoint(t, current_output.Max_NonVacScale));
-                ScaleTime_MaxScale.Points.Add(new DataPoint(t, current_output.Max_Scale));
-                // Classical energy plots
-                ClassicalEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalEnergy));
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalHamiltonianTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalHamiltonian_Energy[i_p]));
-                }
+                ScaleTime_MinScale.Points.Add(new DataPoint(t, current_OutputVariables.Min_Scale));
+                ScaleTime_Min_NonVacScale.Points.Add(new DataPoint(t, current_OutputVariables.Min_NonVacScale));
+                ScaleTime_Max_NonVacScale.Points.Add(new DataPoint(t, current_OutputVariables.Max_NonVacScale));
+                ScaleTime_MaxScale.Points.Add(new DataPoint(t, current_OutputVariables.Max_Scale));
 
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalHamiltonian_wVacuum_Time_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalHamiltonian_wVacuum_Energy[i_p]));
-                }
-
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalLaplacianTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalLaplacian_Energy[i_p]));
-                }
-
-                ClassicalTotalPotentialEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalPotentialEnergy));
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalPotentialEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.PotentialEnergy_Vector[i_p]));
-                }
-
-                ClassicalTotalKineticEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalKineticEnergy));
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalKineticEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.KineticEnergy_Vector[i_p]));
-                }
-
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalEnergyExchangeTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalEnergy_Exchange[i_p]));
-                }
-
-                ClassicalTotalEnergy_Time.Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalEnergy));
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
-                {
-                    ClassicalEnergyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_output.ClassicalEnergy_Vector[i_p]));
-                }
-                //
                 NonVacScale_Boundary_Min_Laplacian.Points.Clear();
                 NonVacScale_Boundary_Max_Laplacian.Points.Clear();
-                NonVacScale_Boundary_Min_Laplacian.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, 0));
-                NonVacScale_Boundary_Min_Laplacian.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
-                NonVacScale_Boundary_Max_Laplacian.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, 0));
-                NonVacScale_Boundary_Max_Laplacian.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
+                NonVacScale_Boundary_Min_Laplacian.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, 0));
+                NonVacScale_Boundary_Min_Laplacian.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
+                NonVacScale_Boundary_Max_Laplacian.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, 0));
+                NonVacScale_Boundary_Max_Laplacian.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
 
                 NonVacScale_Boundary_Min_Commutator.Points.Clear();
                 NonVacScale_Boundary_Max_Commutator.Points.Clear();
-                NonVacScale_Boundary_Min_Commutator.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, -Max_Commutator_Energy));
-                NonVacScale_Boundary_Min_Commutator.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, Max_Commutator_Energy));
-                NonVacScale_Boundary_Max_Commutator.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, -Max_Commutator_Energy));
-                NonVacScale_Boundary_Max_Commutator.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, Max_Commutator_Energy));
+                NonVacScale_Boundary_Min_Commutator.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, -Max_Commutator_Energy));
+                NonVacScale_Boundary_Min_Commutator.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, Max_Commutator_Energy));
+                NonVacScale_Boundary_Max_Commutator.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, -Max_Commutator_Energy));
+                NonVacScale_Boundary_Max_Commutator.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, Max_Commutator_Energy));
 
                 NonVacScale_Boundary_Min.Points.Clear();
                 NonVacScale_Boundary_Max.Points.Clear();
-                NonVacScale_Boundary_Min.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, Min_Energy));
-                NonVacScale_Boundary_Min.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
-                NonVacScale_Boundary_Max.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, Min_Energy));
-                NonVacScale_Boundary_Max.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
+                NonVacScale_Boundary_Min.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, Min_Energy));
+                NonVacScale_Boundary_Min.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
+                NonVacScale_Boundary_Max.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, Min_Energy));
+                NonVacScale_Boundary_Max.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
 
                 NonVacScale_Boundary_Min_Mass.Points.Clear();
                 NonVacScale_Boundary_Max_Mass.Points.Clear();
-                NonVacScale_Boundary_Min_Mass.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, 0));
-                NonVacScale_Boundary_Min_Mass.Points.Add(new OxyPlot.DataPoint((current_output.Min_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
-                NonVacScale_Boundary_Max_Mass.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, 0));
-                NonVacScale_Boundary_Max_Mass.Points.Add(new OxyPlot.DataPoint((current_output.Max_NonVacScale / current_output.Max_Scale) * State.Num_ScaleBins, State.Num_Points));
+                NonVacScale_Boundary_Min_Mass.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, 0));
+                NonVacScale_Boundary_Min_Mass.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Min_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
+                NonVacScale_Boundary_Max_Mass.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, 0));
+                NonVacScale_Boundary_Max_Mass.Points.Add(new OxyPlot.DataPoint((current_OutputVariables.Max_NonVacScale / current_OutputVariables.Max_Scale) * current_state.Num_ScaleBins, current_state.Num_Points));
 
-                for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
                 {
-                    Points_Data[i_p].Points.Clear();
-
-                    if (State.Dimension == 1)
-                        Points_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(State.Positions[i_p][0], 0));
-                    else
-                        Points_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(State.Positions[i_p][0], State.Positions[i_p][1]));
-
-
                     EnergyScale_Laplacian_Data[i_p].Points.Clear();
                     EnergyScale_Commutator_Data[i_p].Points.Clear();
                     EnergyScale_Data[i_p].Points.Clear();
@@ -581,26 +802,26 @@ namespace Quantization_Tool
 
                     EnergyScale_LaplacianDerivative_Data[i_p].Points.Clear();
                     EnergyScale_LaplacianDerivative_Data_smoothed[i_p].Points.Clear();
-                    for (uint i_s = 0; i_s < State.Num_ScaleBins; i_s++)
+                    for (uint i_s = 0; i_s < current_state.Num_ScaleBins; i_s++)
                     {
                         //if (i_p > 0) //Excluding the Vacuum
-                        EnergyScale_Laplacian_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_output.Laplacian_Energy[i_s][i_p]));
+                        EnergyScale_Laplacian_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_OutputVariables.Laplacian_Energy[i_s][i_p]));
 
-                        if ((i_s < (State.Num_ScaleBins - 1)) && (Smooth_flag))
+                        if ((i_s < (current_state.Num_ScaleBins - 1)) && (Smooth_flag))
                         {
-                            EnergyScale_LaplacianDerivative_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_output.Laplacian_Energy_Derivative[i_s][i_p]));
-                            EnergyScale_LaplacianDerivative_Data_smoothed[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, Math.Abs(current_output.Laplacian_Energy_Derivative_smoothed[i_s][i_p] - current_output.Laplacian_Energy_Derivative[i_s][i_p])));
+                            EnergyScale_LaplacianDerivative_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_OutputVariables.Laplacian_Energy_Derivative[i_s][i_p]));
+                            EnergyScale_LaplacianDerivative_Data_smoothed[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, Math.Abs(current_OutputVariables.Laplacian_Energy_Derivative_smoothed[i_s][i_p] - current_OutputVariables.Laplacian_Energy_Derivative[i_s][i_p])));
                         }
 
-                        EnergyScale_Commutator_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_output.Commutator_Energy[i_s][i_p]));
-                        EnergyScale_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_output.Energy_Vector[i_s][i_p]));
-                        MassScale_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_output.Mass_Vector[i_s][i_p]));
+                        EnergyScale_Commutator_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_OutputVariables.Commutator_Energy[i_s][i_p]));
+                        EnergyScale_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_OutputVariables.Energy_Vector[i_s][i_p]));
+                        MassScale_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(i_s, current_OutputVariables.Mass_Vector[i_s][i_p]));
 
-                        if (current_output.Commutator_Energy[i_s][i_p] > Max_Commutator_Energy)
-                            Max_Commutator_Energy = current_output.Commutator_Energy[i_s][i_p];
+                        if (current_OutputVariables.Commutator_Energy[i_s][i_p] > Max_Commutator_Energy)
+                            Max_Commutator_Energy = current_OutputVariables.Commutator_Energy[i_s][i_p];
 
-                        if (current_output.Energy_Vector[i_s][i_p] < Min_Energy)
-                            Min_Energy = current_output.Energy_Vector[i_s][i_p];
+                        if (current_OutputVariables.Energy_Vector[i_s][i_p] < Min_Energy)
+                            Min_Energy = current_OutputVariables.Energy_Vector[i_s][i_p];
                     }
                 }
 
@@ -608,7 +829,7 @@ namespace Quantization_Tool
                 TilePlot_Wiring.PointsPlot_Coloring(Sim_Variables.Tile.Tile_ScalarField);
                 //TilePlot_Wiring.PointsPlot_Vectorizing(Sim_Variables.Tile.Tile_VectorField);
 
-                //PointsPlot_Wiring.PointsPlot_Coloring(current_output.ClassicalEnergy_Exchange);
+                //PointsPlot_Wiring.PointsPlot_Coloring(current_OutputVariables.ClassicalEnergy_Exchange);
                 //
 
                 EnergyScale_Commutator_Plot.Axes[1].Maximum = Max_Commutator_Energy;
@@ -616,16 +837,16 @@ namespace Quantization_Tool
                 EnergyScale_Plot.Axes[1].Minimum = Min_Energy;
 
                 // Laplacian Energy Levels
-                EnergyScale_Laplacian_HeatMap_Data = new double[State.Num_ScaleBins, State.Num_EnergyBins + 1];
-                for (uint i_e = 0; i_e < (State.Num_EnergyBins + 1); i_e++)
+                EnergyScale_Laplacian_HeatMap_Data = new double[current_state.Num_ScaleBins, current_state.Num_EnergyBins + 1];
+                for (uint i_e = 0; i_e < (current_state.Num_EnergyBins + 1); i_e++)
                 {
-                    energy_laplacian_variable = (double)(i_e * State.Num_Points) / (double)State.Num_EnergyBins;
-                    for (uint i_s = 0; i_s < State.Num_ScaleBins; i_s++)
+                    energy_laplacian_variable = (double)(i_e * current_state.Num_Points) / (double)current_state.Num_EnergyBins;
+                    for (uint i_s = 0; i_s < current_state.Num_ScaleBins; i_s++)
                     {
                         EnergyScale_Laplacian_HeatMap_Data[i_s, i_e] = 0.0;
-                        for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                        for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
                         {
-                            EnergyScale_Laplacian_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_laplacian_variable - current_output.Laplacian_Energy[i_s][i_p]));
+                            EnergyScale_Laplacian_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_laplacian_variable - current_OutputVariables.Laplacian_Energy[i_s][i_p]));
                         }
 
                         if (EnergyScale_Laplacian_HeatMap_Data[i_s, i_e] > Max_HeatMap_4plot)
@@ -635,16 +856,16 @@ namespace Quantization_Tool
                 EnergyScale_Laplacian_HeatMap.Data = EnergyScale_Laplacian_HeatMap_Data;
 
                 // Commutator Energy Levels
-                EnergyScale_Commutator_HeatMap_Data = new double[State.Num_ScaleBins, State.Num_EnergyBins + 1];
-                for (uint i_e = 0; i_e < (State.Num_EnergyBins + 1); i_e++)
+                EnergyScale_Commutator_HeatMap_Data = new double[current_state.Num_ScaleBins, current_state.Num_EnergyBins + 1];
+                for (uint i_e = 0; i_e < (current_state.Num_EnergyBins + 1); i_e++)
                 {
-                    energy_commutator_variable = (double)(i_e * Max_Commutator_Energy * 2) / (double)State.Num_EnergyBins - Max_Commutator_Energy;
-                    for (uint i_s = 0; i_s < State.Num_ScaleBins; i_s++)
+                    energy_commutator_variable = (double)(i_e * Max_Commutator_Energy * 2) / (double)current_state.Num_EnergyBins - Max_Commutator_Energy;
+                    for (uint i_s = 0; i_s < current_state.Num_ScaleBins; i_s++)
                     {
                         EnergyScale_Commutator_HeatMap_Data[i_s, i_e] = 0.0;
-                        for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                        for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
                         {
-                            EnergyScale_Commutator_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_commutator_variable - current_output.Commutator_Energy[i_s][i_p]));
+                            EnergyScale_Commutator_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_commutator_variable - current_OutputVariables.Commutator_Energy[i_s][i_p]));
                         }
 
                         if (EnergyScale_Commutator_HeatMap_Data[i_s, i_e] > Max_HeatMap_4plot)
@@ -654,16 +875,16 @@ namespace Quantization_Tool
                 EnergyScale_Commutator_HeatMap.Data = EnergyScale_Commutator_HeatMap_Data;
 
                 // Energy Levels
-                EnergyScale_HeatMap_Data = new double[State.Num_ScaleBins, State.Num_EnergyBins + 1];
-                for (uint i_e = 0; i_e < (State.Num_EnergyBins + 1); i_e++)
+                EnergyScale_HeatMap_Data = new double[current_state.Num_ScaleBins, current_state.Num_EnergyBins + 1];
+                for (uint i_e = 0; i_e < (current_state.Num_EnergyBins + 1); i_e++)
                 {
-                    energy_variable = (double)(i_e * (State.Num_Points - Min_Energy)) / (double)State.Num_EnergyBins + Min_Energy;
-                    for (uint i_s = 0; i_s < State.Num_ScaleBins; i_s++)
+                    energy_variable = (double)(i_e * (current_state.Num_Points - Min_Energy)) / (double)current_state.Num_EnergyBins + Min_Energy;
+                    for (uint i_s = 0; i_s < current_state.Num_ScaleBins; i_s++)
                     {
                         EnergyScale_HeatMap_Data[i_s, i_e] = 0.0;
-                        for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                        for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
                         {
-                            EnergyScale_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_variable - current_output.Energy_Vector[i_s][i_p]));
+                            EnergyScale_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(energy_variable - current_OutputVariables.Energy_Vector[i_s][i_p]));
                         }
 
                         if (EnergyScale_HeatMap_Data[i_s, i_e] > Max_HeatMap_4plot1)
@@ -673,16 +894,16 @@ namespace Quantization_Tool
                 EnergyScale_HeatMap.Data = EnergyScale_HeatMap_Data;
 
                 // Mass Levels
-                MassScale_HeatMap_Data = new double[State.Num_ScaleBins, State.Num_EnergyBins + 1];
-                for (uint i_e = 0; i_e < (State.Num_EnergyBins + 1); i_e++)
+                MassScale_HeatMap_Data = new double[current_state.Num_ScaleBins, current_state.Num_EnergyBins + 1];
+                for (uint i_e = 0; i_e < (current_state.Num_EnergyBins + 1); i_e++)
                 {
-                    mass_variable = (double)(i_e * State.Num_Points) / (double)State.Num_EnergyBins;
-                    for (uint i_s = 0; i_s < State.Num_ScaleBins; i_s++)
+                    mass_variable = (double)(i_e * current_state.Num_Points) / (double)current_state.Num_EnergyBins;
+                    for (uint i_s = 0; i_s < current_state.Num_ScaleBins; i_s++)
                     {
                         MassScale_HeatMap_Data[i_s, i_e] = 0.0;
-                        for (uint i_p = 0; i_p < State.Num_Points; i_p++)
+                        for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
                         {
-                            MassScale_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(mass_variable - current_output.Mass_Vector[i_s][i_p]));
+                            MassScale_HeatMap_Data[i_s, i_e] += -Math.Log(Math.Abs(mass_variable - current_OutputVariables.Mass_Vector[i_s][i_p]));
                         }
 
                         //if (double.IsInfinity(MassScale_HeatMap_Data[i_s, i_e]))
@@ -696,47 +917,24 @@ namespace Quantization_Tool
                 }
                 MassScale_HeatMap.Data = MassScale_HeatMap_Data;
 
-                ScaleTime_Plot.InvalidatePlot(true);
-                Points_Plot.InvalidatePlot(true);
-                Tile_Plot.InvalidatePlot(true);
+            }
 
-                EnergyScale_Laplacian_Plot.InvalidatePlot(true);
-                EnergyScale_Commutator_Plot.InvalidatePlot(true);
-                EnergyScale_Plot.InvalidatePlot(true);
-                MassScale_Plot.InvalidatePlot(true);
-                ClassicalHamiltonianTime_Plot.InvalidatePlot(true);
-                ClassicalHamiltonian_wVacuumTime_Plot.InvalidatePlot(true);
-                ClassicalLaplacianTime_Plot.InvalidatePlot(true);
-                ClassicalPotentialEnergyTime_Plot.InvalidatePlot(true);
-                ClassicalKineticEnergyTime_Plot.InvalidatePlot(true);
-                ClassicalEnergyExchangeTime_Plot.InvalidatePlot(true);
-                ClassicalEnergyTime_Plot.InvalidatePlot(true);
-
-                EnergyScale_LaplacianDerivative_Plot_smoothed.InvalidatePlot(true);
-                EnergyScale_LaplacianDerivative_Plot.InvalidatePlot(true);
-
-                EnergyScale_Laplacian_HeatMap_Plot.InvalidatePlot(true);
-                EnergyScale_Commutator_HeatMap_Plot.InvalidatePlot(true);
-                EnergyScale_HeatMap_Plot.InvalidatePlot(true);
-                MassScale_HeatMap_Plot.InvalidatePlot(true);
-
-                if (false)
-                {
-                    //int frequency = (int)Math.Round(1000 * Math.Sqrt(current_output.Laplacian_Energy[State.Num_ScaleBins / 2][1]));
-                    int frequency = (int)Math.Round(700 * Math.Sqrt(current_output.Commutator_Energy[State.Num_ScaleBins / 2][State.Num_Points - 1]));
-                    if (frequency >= 37)
-                        Console.Beep(frequency, 50);
-                }
-                //watch.Stop();
-                //var elapsed = watch.ElapsedMilliseconds/1000.0;
-            //}
+            if (false)
+            {
+                //int frequency = (int)Math.Round(1000 * Math.Sqrt(current_OutputVariables.Laplacian_Energy[current_state.Num_ScaleBins / 2][1]));
+                int frequency = (int)Math.Round(700 * Math.Sqrt(current_OutputVariables.Commutator_Energy[current_state.Num_ScaleBins / 2][current_state.Num_Points - 1]));
+                if (frequency >= 37)
+                    Console.Beep(frequency, 50);
+            }
+            //watch.Stop();
+            //var elapsed = watch.ElapsedMilliseconds/1000.0;
         }
 
         private void Run_Simulation()
         {
             while ((SimTime_Counter * Sim_Variables.dt) < Sim_Variables.Time_Range)
             {
-                MRE.WaitOne();
+                //MRE.WaitOne();
 
                 // Timing:
                 //var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -751,15 +949,20 @@ namespace Quantization_Tool
                 }
 
                 // Test
-                string Output_FileName = output_path + "\\Quantization_Output_" + SimTime_Counter + ".txt";
+                string Output_FileName = output_path_out + "\\Quantization_Output_" + SimTime_Counter + ".txt";
+                string State_FileName = output_path_state + "\\Quantization_State_" + SimTime_Counter + ".txt";
                 DO.Write_XML(Output_FileName, output_Variables);
+                DO.Write_XML(State_FileName, State);
 
 
-                Plot_Graphs(SimTime_Counter);
+                //Plot_Graphs(SimTime_Counter);
 
 
                 SimTime_Counter++;
                 backgroundWorker_Simulation.ReportProgress(SimTime_Counter);
+
+                if (backgroundWorker_Simulation.CancellationPending)
+                    break;
 
             }
         }
@@ -772,8 +975,19 @@ namespace Quantization_Tool
         private void backgroundWorker_Simulation_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             simulation_ProgressBar.Value = (int)Math.Round(100 * SimTime_Counter * Sim_Variables.dt / Sim_Variables.Time_Range);
+
+            Plot_Graphs(SimTime_Counter - 1, State, output_Variables);
+
+            // Refreshing Graphs
+            Refresh_Graphs();
+
         }
 
+        private void backgroundWorker_Simulation_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            button_Run.Text = "Run";
+            RunButton_State = false;
+        }
     }
 
 }

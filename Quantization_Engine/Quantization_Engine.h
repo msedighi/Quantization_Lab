@@ -15,6 +15,7 @@ class Compute
 public:
 	double Min_Distance;
 	double Max_Distance;
+	Eigen::MatrixXd Distance_Operator;
 
 	Clusters * Hierarchical_Clusters;
 	Eigen::VectorXd* Laplacian_Energy;
@@ -43,6 +44,7 @@ public:
 	Global_Variables* Global_ClassicalVariables;
 
 	Eigen::VectorXd ClassicalHamiltonian_Energy;
+	Eigen::VectorXd ClassicalHamiltonian_Vacuum;
 	Eigen::VectorXd ClassicalHamiltonian_wVacuum_Energy;
 	Eigen::VectorXd ClassicalLaplacian_Energy;
 
@@ -99,6 +101,7 @@ private:
 	Eigen::MatrixXcd* Commutator_Orthonormal_Transformation;
 
 	// Classical Variables
+	Eigen::MatrixXd KineticEnergy_Operator;
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian;
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian_wVacuum;
 	Eigen::MatrixXd PotentialEnergy_Operator;

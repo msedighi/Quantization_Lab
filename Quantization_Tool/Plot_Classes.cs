@@ -280,6 +280,11 @@ namespace Quantization_Tool
         {
             this.Panel1Collapsed = state;
         }
+
+        public void Refresh_Graph()
+        {
+            this.Plot_View.Invalidate(true);
+        }
     }
 
     public class Plot_ToolStripContainer : ToolStripContainer
@@ -360,6 +365,11 @@ namespace Quantization_Tool
         public void Options_Panel(bool state)
         {
             this.Plot_Container.Panel1Collapsed = state;
+        }
+
+        public void Refresh_Graph()
+        {
+            this.Plot_Container.Refresh_Graph();
         }
     }
 

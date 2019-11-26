@@ -115,6 +115,14 @@ public:
 	double Energy(double r);
 };
 
+struct Constant : public Interaction
+{
+public:
+	static double Coefficient;
+	static double MinPotential_Radius;
+	double Force(double r);
+	double Energy(double r);
+};
 //
 
 // Particle Dynamics Algorithms

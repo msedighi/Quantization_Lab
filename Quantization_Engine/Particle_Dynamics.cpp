@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Particle_Dynamics.h"
 #include "Data_Structures.h"
+#include <cmath>
 
 using namespace Eigen;
 // Particle Dynamics functions 
@@ -285,7 +286,7 @@ double RadialPower_Force::Energy(double r)
 }
 
 // Gravitation Class
-double Gravitation::Coefficient = 100.0;
+double Gravitation::Coefficient = 10.0;
 double Gravitation::Force(double r)
 {
 	return (-Coefficient / (r*r));
@@ -334,6 +335,16 @@ double Lennard_Jones::Force(double r)
 double Lennard_Jones::Energy(double r)
 {
 	return (Coefficient * (pow(MinPotential_Radius / r, 12) - 2 * pow(MinPotential_Radius / r, 6)));
+}
+// Constant Class
+double Constant::Coefficient = 10.0;
+double Constant::Force(double r)
+{
+	return (-Coefficient);
+}
+double Constant::Energy(double r)
+{
+	return (Coefficient * abs(r) / 2.0);
 }
 //
 

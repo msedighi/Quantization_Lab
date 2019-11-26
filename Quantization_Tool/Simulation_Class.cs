@@ -124,6 +124,7 @@ namespace Quantization_Tool
 
                     Out.ClassicalLaplacian_Energy[i_p] = Q.ClassicalLaplacian_Energy[i_p];
                     Out.ClassicalHamiltonian_Energy[i_p] = Q.ClassicalHamiltonian_Energy[i_p];
+                    Out.ClassicalHamiltonian_Vacuum[i_p] = Q.ClassicalHamiltonian_Vacuum[i_p];
                     Out.ClassicalHamiltonian_wVacuum_Energy[i_p] = Q.ClassicalHamiltonian_wVacuum_Energy[i_p];
                     for (uint j_p = 0; j_p < state.Num_Points; j_p++)
                     {

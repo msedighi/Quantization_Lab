@@ -163,34 +163,34 @@ namespace Quantization_Tool
             if (RunButton_State)
             {
                 button_Run.Text = "Stop";
-                MRE.Set();
+                //MRE.Set();
 
-                simulation_ProgressBar.Value = 0;
                 backgroundWorker_Simulation.RunWorkerAsync();
             }
             else
             {
                 button_Run.Text = "Run";
 
-                simulation_ProgressBar.Value = 0;
                 backgroundWorker_Simulation.CancelAsync();
                 //MRE.Reset();
             }
 
         }
-        private void button_Pause_Click(object sender, EventArgs e)
+        private void button_Cancel_Click(object sender, EventArgs e)
         {
-            PauseButton_State = !PauseButton_State;
-            if (PauseButton_State)
-            {
-                button_Pause.Text = "Continue";
-                MRE.Reset();
-            }
-            else
-            {
-                button_Pause.Text = "Pause";
-                MRE.Set();
-            }
+            RePlot_Graphs();
+
+            //PauseButton_State = !PauseButton_State;
+            //if (PauseButton_State)
+            //{
+            //    button_Pause.Text = "Continue";
+            //    MRE.Reset();
+            //}
+            //else
+            //{
+            //    button_Pause.Text = "Pause";
+            //    MRE.Set();
+            //}
 
         }
 
