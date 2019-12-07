@@ -85,10 +85,10 @@ namespace Quantization_Tool
         public double[] ClassicalLaplacian_Energy;
         public double[][] ClassicalLaplacian_EigenStates;
         public double[] ClassicalHamiltonian_Energy;
-        public double[] ClassicalHamiltonian_Vacuum;
         public double[][] ClassicalHamiltonian_EigenStates;
         public double[] ClassicalHamiltonian_wVacuum_Energy;
         public double[][] ClassicalHamiltonian_wVacuum_EigenStates;
+        public double[] ClassicalParticle_Entropy;
         //
 
         [XmlIgnore]
@@ -109,12 +109,12 @@ namespace Quantization_Tool
             ClassicalEnergy_Vector = new double[state.Num_Points];
 
             ClassicalLaplacian_Energy = new double[state.Num_Points];
-            ClassicalHamiltonian_Vacuum = new double[state.Num_Points];
             ClassicalLaplacian_EigenStates = new double[state.Num_Points][];
             ClassicalHamiltonian_Energy = new double[state.Num_Points];
             ClassicalHamiltonian_wVacuum_Energy = new double[state.Num_Points];
             ClassicalHamiltonian_EigenStates = new double[state.Num_Points][];
             ClassicalHamiltonian_wVacuum_EigenStates = new double[state.Num_Points][];
+            ClassicalParticle_Entropy = new double[state.Num_Points];
 
             for (int i = 0; i < state.Num_Points; i++)
             {

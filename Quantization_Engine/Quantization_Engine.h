@@ -38,15 +38,17 @@ public:
 
 	double* KineticEnergy_Vector;
 	double* ClassicalEnergy_Exchange;
+	Eigen::VectorXd ClassicalLocalEnergy_Vector;
+
 	Eigen::VectorXd PotentialEnergy_Vector;
 
 	//Eigen::VectorXd GlobalEnergy_Exchange;
 	Global_Variables* Global_ClassicalVariables;
 
 	Eigen::VectorXd ClassicalHamiltonian_Energy;
-	Eigen::VectorXd ClassicalHamiltonian_Vacuum;
 	Eigen::VectorXd ClassicalHamiltonian_wVacuum_Energy;
 	Eigen::VectorXd ClassicalLaplacian_Energy;
+	Eigen::VectorXd ClassicalParticle_Entropy;
 
 	Eigen::MatrixXd ClassicalHamiltonian_EigenStates;
 	Eigen::MatrixXd ClassicalHamiltonian_wVacuum_EigenStates;
@@ -83,6 +85,7 @@ public:
 	~Compute();
 private:
 	bool debug_flag = false;
+	bool tile_flag = false;
 	long Number_Pairs;
 
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> Laplacian_Eigenstructure;
@@ -93,6 +96,7 @@ private:
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ClassicalLaplacian_Eigenstructure;
 
 	Eigen::VectorXd Vac;
+	Eigen::MatrixXd Vacuum_Operator;
 	Eigen::MatrixXd Correlation_Operator;
 	Eigen::MatrixXd Mass_Operator;
 	Eigen::MatrixXcd Commutator;
@@ -102,10 +106,13 @@ private:
 
 	// Classical Variables
 	Eigen::MatrixXd KineticEnergy_Operator;
+	Eigen::MatrixXd KineticEnergyDiff_Operator;
+	Eigen::MatrixXd XP_Commutator;
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian;
 	Eigen::MatrixXd ClassicalEnergy_Hamiltonian_wVacuum;
 	Eigen::MatrixXd PotentialEnergy_Operator;
 	Eigen::MatrixXd PotentialEnergy_Laplacian;
+	Eigen::MatrixXd ClassicalHamiltonian_EigenState_Probs;
 	//
 
 	// Points to Wave (TiangleTile)

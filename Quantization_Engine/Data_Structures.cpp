@@ -69,7 +69,8 @@ double*** Difference_Matrix(double** vectors, int num_points, int dim)
 		difference_array[index_r] = new double*[num_points];
 		for (int index_c = 0; index_c < num_points; index_c++)
 		{
-			for (int i = 0; i < dim; i++) difference_array[index_r][index_c][i] = vectors[index_c][i] - vectors[index_r][i];
+			for (int i = 0; i < dim; i++) 
+				difference_array[index_r][index_c][i] = vectors[index_c][i] - vectors[index_r][i];
 		}
 	}
 	return difference_array;

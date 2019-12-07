@@ -110,6 +110,188 @@ double* Momentum(double** velocities, double* masses, int num_points, int dim)
 	return momentum;
 }
 
+double*** VelocityDiff_Operator(double ** velocities, int num_points, int dim)
+{
+	double*** velocity_array = new double**[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		velocity_array[index_r] = new double*[num_points];
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			velocity_array[index_r][index_c] = new double[dim];
+
+			if (index_r == index_c)
+			{
+				for (int i = 0; i < dim; i++) 
+					velocity_array[index_r][index_c][i] = 0;
+			}
+			else
+			{
+				for (int i = 0; i < dim; i++) 
+					velocity_array[index_r][index_c][i] = velocities[index_c][i] - velocities[index_r][i];
+			}
+
+		}
+	}
+	return velocity_array;
+}
+
+double*** Vertex2Edge_VectorField_Operator(double** vectorfield, int num_points, int dim)
+{
+	double*** vectorfield_operator = new double**[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		vectorfield_operator[index_r] = new double*[num_points];
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			vectorfield_operator[index_r][index_c] = new double[dim];
+
+			if (index_r == index_c)
+			{
+				for (int i = 0; i < dim; i++)
+					vectorfield_operator[index_r][index_c][i] = 0;
+			}
+			else
+			{
+				for (int i = 0; i < dim; i++)
+					vectorfield_operator[index_r][index_c][i] = vectorfield[index_c][i] - vectorfield[index_r][i];
+			}
+
+		}
+	}
+	return vectorfield_operator;
+}
+
+double *** MomentumDiff_Operator(double ** velocities, double * masses, int num_points, int dim)
+{
+	double** massdiff_operator = MassDiff_Operator(masses, num_points);
+	double*** velocitydiff_operator = VelocityDiff_Operator(velocities, num_points, dim);
+
+	return MomentumDiff_Operator(velocitydiff_operator, massdiff_operator, num_points, dim);
+}
+
+double *** MomentumDiff_Operator(double *** velocitydiff_operator, double ** massdiff_operator, int num_points, int dim)
+{
+	double*** momentum_array = new double**[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		momentum_array[index_r] = new double*[num_points];
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			momentum_array[index_r][index_c] = new double[dim];
+
+			for (int i = 0; i < dim; i++)
+				momentum_array[index_r][index_c][i] = massdiff_operator[index_r][index_c] * velocitydiff_operator[index_r][index_c][i];
+
+		}
+	}
+	return momentum_array;
+}
+
+double ** KEnergyDiff_Operator(double *** velocitydiff_operator, double ** massdiff_operator, int num_points, int dim)
+{
+	double** kenergydiff_array = new double*[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		kenergydiff_array[index_r] = new double[num_points];
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			kenergydiff_array[index_r][index_c] = 0;
+
+			if (index_r != index_c)
+			{
+				for (int i = 0; i < dim; i++)
+					kenergydiff_array[index_r][index_c] += velocitydiff_operator[index_r][index_c][i] * velocitydiff_operator[index_r][index_c][i];
+
+				kenergydiff_array[index_r][index_c] = massdiff_operator[index_r][index_c] * kenergydiff_array[index_r][index_c] / 2; // Kinetic Energy between Particles
+			}
+		}
+	}
+	return kenergydiff_array;
+}
+
+Eigen::MatrixXd KEnergyDiff_Operator(double ** velocities, double * masses, int num_points, int dim)
+{
+	double** massdiff_operator = MassDiff_Operator(masses, num_points);
+	double*** velocitydiff_operator = VelocityDiff_Operator(velocities, num_points, dim);
+
+	Eigen::MatrixXd kenergydiff_matrix = MatrixXd::Constant(num_points, num_points, 0);
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			if (index_r != index_c)
+			{
+				for (int i = 0; i < dim; i++)
+					kenergydiff_matrix(index_r,index_c) += velocitydiff_operator[index_r][index_c][i] * velocitydiff_operator[index_r][index_c][i];
+
+				kenergydiff_matrix(index_r, index_c) = massdiff_operator[index_r][index_c] * kenergydiff_matrix(index_r, index_c) / 2.0; // Kinetic Energy between Particles
+			}
+		}
+	}
+	return kenergydiff_matrix;
+}
+
+Eigen::MatrixXd Compute_VectorField_Commutator(double** first_vectorfield, double** second_vectorfield, int num_points, int dim)
+{
+	double*** First_VectorField_operator = Vertex2Edge_VectorField_Operator(first_vectorfield, num_points, dim);
+	double*** Second_VectorField_operator = Vertex2Edge_VectorField_Operator(second_vectorfield, num_points, dim);
+
+	Eigen::MatrixXd commutator = MatrixXd::Constant(num_points, num_points, 0);
+	for (int index_i = 0; index_i < num_points; index_i++)
+	{
+		for (int index_j = 0; index_j < num_points; index_j++)
+		{
+			commutator(index_i, index_j) = 0;
+			for (int index_k = 0; index_k < num_points; index_k++)
+			{
+				for (int i = 0; i < dim; i++)
+					commutator(index_i, index_j) += First_VectorField_operator[index_i][index_k][i] * Second_VectorField_operator[index_k][index_j][i];
+			}
+
+			for (int index_k = 0; index_k < num_points; index_k++)
+			{
+				for (int i = 0; i < dim; i++)
+					commutator(index_i, index_j) -= Second_VectorField_operator[index_i][index_k][i] * First_VectorField_operator[index_k][index_j][i];
+			}
+		}
+	}
+	return commutator;
+}
+
+double ** MassDiff_Operator(double * masses, int num_points)
+{
+	double total_mass = 0;
+	for (int index = 0; index < num_points; index++)
+	{
+		total_mass += masses[index];
+	}
+	
+	double** mass_array = new double*[num_points];
+	for (int index_r = 0; index_r < num_points; index_r++)
+	{
+		mass_array[index_r] = new double[num_points];
+
+		for (int index_c = 0; index_c < num_points; index_c++)
+		{
+			if (index_r == index_c)
+			{
+				mass_array[index_r][index_c] = 0;
+			}
+			else
+			{
+				mass_array[index_r][index_c] = masses[index_c] * masses[index_r] / total_mass;
+			}
+
+		}
+	}
+	return mass_array;
+}
+
 double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim)
 {
 	double* energy_exchange = new double[num_points];

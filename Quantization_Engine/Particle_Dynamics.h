@@ -51,6 +51,14 @@ double*** Force_Operator(double(*Force_func)(double), double** positions, int nu
 
 double* Momentum(double** velocities, double* masses, int num_points, int dim);
 
+double*** VelocityDiff_Operator(double** velocities, int num_points, int dim);
+
+double** MassDiff_Operator(double* masses, int num_points);
+
+double*** MomentumDiff_Operator(double** velocities, double* masses, int num_points, int dim);
+
+double*** MomentumDiff_Operator(double*** velocitydiff_operator, double** massdiff_operator, int num_points, int dim);
+
 double* Energy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim);
 
 Eigen::VectorXd CollectiveEnergy_Exchange(Interaction* interaction, double** positions, double** velocities, int num_points, int dim, Eigen::MatrixXd orthogonal_transformation);
@@ -61,9 +69,15 @@ double* Kinetic_Energy(double** velocities, double* masses, int num_points, int 
 
 double* Kinetic_Energy(double** velocities, double* masses, int num_points, int dim);
 
+double** KEnergyDiff_Operator(double*** velocitydiff_operator, double** massdiff_operator, int num_points, int dim);
+
+Eigen::MatrixXd KEnergyDiff_Operator(double** velocities, double* masses, int num_points, int dim);
+
 double Potential_Energy(Interaction* interaction, double** positions, int num_points, int dim);
 
 double Potential_Energy(double(*energy_func)(double), double** positions, int num_points, int dim);
+
+Eigen::MatrixXd Compute_VectorField_Commutator(double** First_VectorField_operator, double** Second_VectorField_operator, int num_points, int dim);
 
 
 struct RadialPower_Force

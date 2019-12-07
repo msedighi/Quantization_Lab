@@ -120,12 +120,14 @@ namespace Quantization_Tool
                     Out.ClassicalEnergy_Exchange[i_p] = Q.ClassicalEnergy_Exchange[i_p];
                     Out.KineticEnergy_Vector[i_p] = Q.KineticEnergy_Vector[i_p] / 2;
                     Out.PotentialEnergy_Vector[i_p] = Q.PotentialEnergy_Vector[i_p] / 2;
-                    Out.ClassicalEnergy_Vector[i_p] = Out.KineticEnergy_Vector[i_p] + Out.PotentialEnergy_Vector[i_p];
+                    //Out.ClassicalEnergy_Vector[i_p] = Out.KineticEnergy_Vector[i_p] + Out.PotentialEnergy_Vector[i_p];
+                    //Out.ClassicalEnergy_Vector[i_p] = Out.KineticEnergy_Vector[i_p];
+                    Out.ClassicalEnergy_Vector[i_p] = Q.ClassicalLocalEnergy_Vector[i_p];
 
                     Out.ClassicalLaplacian_Energy[i_p] = Q.ClassicalLaplacian_Energy[i_p];
                     Out.ClassicalHamiltonian_Energy[i_p] = Q.ClassicalHamiltonian_Energy[i_p];
-                    Out.ClassicalHamiltonian_Vacuum[i_p] = Q.ClassicalHamiltonian_Vacuum[i_p];
                     Out.ClassicalHamiltonian_wVacuum_Energy[i_p] = Q.ClassicalHamiltonian_wVacuum_Energy[i_p];
+                    Out.ClassicalParticle_Entropy[i_p] = Q.ClassicalParticle_Entropy[i_p];
                     for (uint j_p = 0; j_p < state.Num_Points; j_p++)
                     {
                         Out.Dendogram_Original[i_p][j_p] = Q.Dendogram_Original[i_p][j_p];

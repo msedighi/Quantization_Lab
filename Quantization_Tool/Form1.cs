@@ -30,9 +30,9 @@ namespace Quantization_Tool
         private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonianTime_Data;
         private EnergyTimePlotWiring ClassicalHamiltonianTimePlot_Wiring;
 
-        private PlotModel ClassicalHamiltonianVacuumTime_Plot = new PlotModel();
-        private OxyPlot.Series.ScatterSeries[] ClassicalHamiltonianVacuumTime_Data;
-        private DataPlotWiring ClassicalHamiltonianVacuumTimePlot_Wiring;
+        private PlotModel ClassicalParticleEntropyTime_Plot = new PlotModel();
+        private OxyPlot.Series.ScatterSeries[] ClassicalParticleEntropyTime_Data;
+        private DataPlotWiring ClassicalParticleEntropyTimePlot_Wiring;
 
         private PlotModel[] ClassicalHamiltonianStatesTime_Plot;
         private OxyPlot.Series.ScatterSeries[][] ClassicalHamiltonianStatesTime_Data;
@@ -160,8 +160,8 @@ namespace Quantization_Tool
 
             // Initialize Values
             Random rand = new Random();
-            int _Num_Points = 26;
-            int _Dimension = 2;
+            int _Num_Points = 6;
+            int _Dimension = 3;
             //int _Num_ScaleBins = 200;
             int _Num_ScaleBins = 20;
             Eigenvectors_flag = false;
@@ -206,11 +206,17 @@ namespace Quantization_Tool
                 for (uint i_p = 0; i_p < State.Num_Points; i_p++)
                 {
                     // This:
-                    State.Mass_Ratios[i_p] = 1.0;
-                    // Or, 
-                    // Ask Mass_Ratio_Max (should be > 1) :
-                    //State.Mass_Ratios[i_p] = (State.Mass_Ratio_Max - 1.0) * rand.NextDouble() + 1.0;
-                    // Or,
+                    if (true)
+                    {
+                        State.Mass_Ratios[i_p] = 1.0;
+                    }
+                    else
+                    {
+                        // Or, 
+                        // Ask Mass_Ratio_Max (should be > 1) :
+                        State.Mass_Ratios[i_p] = (State.Mass_Ratio_Max - 1.0) * rand.NextDouble() + 1.0;
+                    }
+                        // Or,
                     // Ask all the Mass Ratios!
 
                     Total_Mass += State.Mass_Ratios[i_p];
@@ -325,7 +331,7 @@ namespace Quantization_Tool
 
             // Classical Energy Plots
             Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianTime_Plot, "Classical Hamitonian");
-            Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonianVacuumTime_Plot, "Classical Hamiltonian Vacuum");
+            Initialize_ClassicalEnergyTimePlot(ClassicalParticleEntropyTime_Plot, "Classical Particle Entropy");
             Initialize_ClassicalEnergyTimePlot(ClassicalHamiltonian_wVacuumTime_Plot, "Classical Kinetic-Potential Commutator");
             Initialize_ClassicalEnergyTimePlot(ClassicalLaplacianTime_Plot, "Classical Laplacian");
             Initialize_ClassicalEnergyTimePlot(ClassicalPotentialEnergyTime_Plot, "Potential Energy");
@@ -352,12 +358,12 @@ namespace Quantization_Tool
                 ClassicalHamiltonianTime_Data[i_p].MarkerSize = 3;
                 //ClassicalHamiltonianTime_Data[i_p].MarkerFill = OxyColors.Black;
             }
-            ClassicalHamiltonianVacuumTime_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
+            ClassicalParticleEntropyTime_Data = new OxyPlot.Series.ScatterSeries[State.Num_Points];
             for (uint i_p = 0; i_p < State.Num_Points; i_p++)
             {
-                ClassicalHamiltonianVacuumTime_Data[i_p] = new OxyPlot.Series.ScatterSeries();
-                ClassicalHamiltonianVacuumTime_Data[i_p].MarkerType = MarkerType.Circle;
-                ClassicalHamiltonianVacuumTime_Data[i_p].MarkerSize = 3;
+                ClassicalParticleEntropyTime_Data[i_p] = new OxyPlot.Series.ScatterSeries();
+                ClassicalParticleEntropyTime_Data[i_p].MarkerType = MarkerType.Circle;
+                ClassicalParticleEntropyTime_Data[i_p].MarkerSize = 3;
                 //ClassicalHamiltonianTime_Data[i_p].MarkerFill = OxyColors.Black;
             }
             ClassicalEnergy_Time.MarkerType = MarkerType.Circle;
@@ -442,7 +448,7 @@ namespace Quantization_Tool
             Attach_Graphs();
 
             ClassicalHamiltonianTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalHamiltonianTime_Plot, ClassicalHamiltonianTime_Data, ClassicalEnergy_Time);
-            ClassicalHamiltonianVacuumTimePlot_Wiring = new DataPlotWiring(ClassicalHamiltonianVacuumTime_Plot, ClassicalHamiltonianVacuumTime_Data);
+            ClassicalParticleEntropyTimePlot_Wiring = new DataPlotWiring(ClassicalParticleEntropyTime_Plot, ClassicalParticleEntropyTime_Data);
             ClassicalHamiltonian_wVacuumTimePlot_Wiring = new DataPlotWiring(ClassicalHamiltonian_wVacuumTime_Plot, ClassicalHamiltonian_wVacuum_Time_Data);
             ClassicalLaplacianTimePlot_Wiring = new DataPlotWiring(ClassicalLaplacianTime_Plot, ClassicalLaplacianTime_Data);
             ClassicalPotentialEnergyTimePlot_Wiring = new EnergyTimePlotWiring(ClassicalPotentialEnergyTime_Plot, ClassicalPotentialEnergyTime_Data, ClassicalTotalPotentialEnergy_Time);
@@ -459,7 +465,7 @@ namespace Quantization_Tool
 
 
             ClassicalHamiltonianTimePlot_Wiring.Activate();
-            ClassicalHamiltonianVacuumTimePlot_Wiring.Activate();
+            ClassicalParticleEntropyTimePlot_Wiring.Activate();
             ClassicalHamiltonian_wVacuumTimePlot_Wiring.Activate();
             ClassicalLaplacianTimePlot_Wiring.Activate();
             ClassicalPotentialEnergyTimePlot_Wiring.Activate();
@@ -584,7 +590,7 @@ namespace Quantization_Tool
             for (uint i_p = 0; i_p < State.Num_Points; i_p++)
             {
                 ClassicalHamiltonianTime_Data[i_p].Points.Clear();
-                ClassicalHamiltonianVacuumTime_Data[i_p].Points.Clear();
+                ClassicalParticleEntropyTime_Data[i_p].Points.Clear();
             }
 
             for (uint i_p = 0; i_p < State.Num_Points; i_p++)
@@ -651,7 +657,7 @@ namespace Quantization_Tool
             Points_Plot.InvalidatePlot(true);
 
             ClassicalHamiltonianTime_Plot.InvalidatePlot(true);
-            ClassicalHamiltonianVacuumTime_Plot.InvalidatePlot(true);
+            ClassicalParticleEntropyTime_Plot.InvalidatePlot(true);
             ClassicalHamiltonian_wVacuumTime_Plot.InvalidatePlot(true);
             ClassicalLaplacianTime_Plot.InvalidatePlot(true);
             ClassicalEnergyExchangeTime_Plot.InvalidatePlot(true);
@@ -671,7 +677,7 @@ namespace Quantization_Tool
             plot_ToolStripContainer_TopRight.Attach(ClassicalHamiltonian_wVacuumTime_Plot);
             //plot_ToolStripContainer_TopRight.Attach(ClassicalPotentialEnergyTime_Plot);
             plot_ToolStripContainer_TopMiddle.Attach(ClassicalHamiltonianTime_Plot);
-            plot_ToolStripContainer_TopLeft.Attach(ClassicalHamiltonianVacuumTime_Plot);
+            plot_ToolStripContainer_TopLeft.Attach(ClassicalParticleEntropyTime_Plot);
             //plot_ToolStripContainer_TopLeft.Attach(ClassicalLaplacianTime_Plot);
             //plot_ToolStripContainer_BottomRight.Attach(ClassicalKineticEnergyTime_Plot);
             plot_ToolStripContainer_BottomRight.Attach(Points_Plot);
@@ -705,7 +711,7 @@ namespace Quantization_Tool
             for (uint i_p = 0; i_p < current_state.Num_Points; i_p++)
             {
                 ClassicalHamiltonianTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_Energy[i_p]));
-                ClassicalHamiltonianVacuumTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalHamiltonian_Vacuum[i_p]));
+                ClassicalParticleEntropyTime_Data[i_p].Points.Add(new OxyPlot.Series.ScatterPoint(t, current_OutputVariables.ClassicalParticle_Entropy[i_p]));
             }
 
             for (uint j_p = 0; j_p < 6; j_p++)

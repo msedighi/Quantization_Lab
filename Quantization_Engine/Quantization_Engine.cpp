@@ -65,9 +65,9 @@ void Compute::Perturb(double** dH, int num_points, long num_scale_bins, double* 
 void Compute::Run(double** positions, double** velocities, double* masses, int num_points, int dimension, double dt, long num_scale_bins, bool eigenvectors_flag, bool perturb_flag, bool smooth_flag)
 {	
 	//InverseRoot* interaction = new InverseRoot();
-	Spring* interaction = new Spring();
+	//Spring* interaction = new Spring();
 	//Constant* interaction = new Constant();
-	//Gravitation* interaction = new Gravitation();
+	Gravitation* interaction = new Gravitation();
 	//Lennard_Jones* interaction = new Lennard_Jones();
 	//Logarithmic* interaction = new Logarithmic();
 	Compute::Run(interaction, positions, velocities, masses, num_points, dimension, dt, num_scale_bins, eigenvectors_flag, perturb_flag, smooth_flag);
@@ -86,6 +86,8 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	ClassicalKineticEnergy = 0;
 	KineticEnergy_Vector = Kinetic_Energy(velocities, masses, num_points, dimension);
 	ClassicalEnergy_Exchange = Energy_Exchange(interaction, positions, velocities, num_points, dimension);
+	KineticEnergyDiff_Operator = KEnergyDiff_Operator(velocities, masses, num_points, dimension);
+	XP_Commutator = Compute_VectorField_Commutator(velocities, positions, num_points, dimension);
 	for (int i_p = 0; i_p < num_points; i_p++)
 	{
 		ClassicalKineticEnergy += KineticEnergy_Vector[i_p] / 2.0;
@@ -97,18 +99,36 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 			if (i_p != j_p)
 			{
 				PotentialEnergy_Operator(i_p, j_p) = interaction->Energy(Distances.Operator(i_p, j_p));
-				//				ClassicalEnergy_Hamiltonian(i_p, j_p) = PotentialEnergy_Operator(i_p, j_p);
+				//				ClassicalEnergy_Hamiltonian(i_p, j_p) = PotentialEnergy_Operator(i_p, j_p);				 
 			}
 		}
 	}
 	PotentialEnergy_Vector = PotentialEnergy_Operator * Vac;
 	PotentialEnergy_Laplacian = (MatrixXd)PotentialEnergy_Vector.asDiagonal() - PotentialEnergy_Operator;
-	ClassicalEnergy_Hamiltonian = (KineticEnergy_Operator + PotentialEnergy_Laplacian)/2.0;
+	// *** Hamiltonian with Potential Energy as a Laplacian ***
+	//ClassicalEnergy_Hamiltonian = (KineticEnergy_Operator + PotentialEnergy_Laplacian)/2.0;
+	//ClassicalEnergy = ClassicalEnergy_Hamiltonian.trace();
+
+	// *** Hamiltonian with Potential Energy as Off-diagonal ***
+	//ClassicalEnergy_Hamiltonian = (KineticEnergy_Operator + PotentialEnergy_Operator) / 2.0;
+	//ClassicalEnergy = ClassicalEnergy_Hamiltonian.sum();
+
+	// *** Hamiltonian with both Kinetic & Potential Energy as Off-diagonal ***
+	ClassicalEnergy_Hamiltonian = (KineticEnergyDiff_Operator + PotentialEnergy_Operator) / 2.0;
+	ClassicalEnergy = ClassicalEnergy_Hamiltonian.sum();
+	ClassicalLocalEnergy_Vector = ClassicalEnergy_Hamiltonian * Vac;
+	//ClassicalEnergy_Hamiltonian = (ClassicalEnergy_Hamiltonian * Vacuum_Operator + Vacuum_Operator * ClassicalEnergy_Hamiltonian)/2.0;
+	//ClassicalEnergy = ClassicalEnergy_Hamiltonian.trace();
+
+	// *** Hamiltonian as a Laplacian with both Kinetic + Potential Energy as Off-diagonal ***
+	ClassicalEnergy_Hamiltonian = (MatrixXd)ClassicalLocalEnergy_Vector.asDiagonal() - ClassicalEnergy_Hamiltonian;
+
 	//	ClassicalEnergy_Hamiltonian_wVacuum = ClassicalEnergy_Hamiltonian - ClassicalEnergy_Hamiltonian * Vac * Vac.transpose() * ClassicalEnergy_Hamiltonian / ClassicalEnergy_Hamiltonian.sum();
-	ClassicalEnergy_Hamiltonian_wVacuum = (PotentialEnergy_Laplacian * KineticEnergy_Operator - KineticEnergy_Operator * PotentialEnergy_Laplacian) / 4.0;
+	// ClassicalEnergy_Hamiltonian_wVacuum = (PotentialEnergy_Laplacian * KineticEnergy_Operator - KineticEnergy_Operator * PotentialEnergy_Laplacian) / 4.0;
+	ClassicalEnergy_Hamiltonian_wVacuum = (PotentialEnergy_Operator * KineticEnergyDiff_Operator - KineticEnergyDiff_Operator * PotentialEnergy_Operator) / 4.0;
+	ClassicalEnergy_Hamiltonian_wVacuum = Compute_VectorField_Commutator(positions, velocities, num_points, dimension);
 
 	//
-	ClassicalEnergy = ClassicalEnergy_Hamiltonian.trace();
 	ClassicalPotentialEnergy = PotentialEnergy_Operator.sum() / 2.0;
 	// Computing Classical Eigen-Structure
 	ClassicalLaplacian_Eigenstructure.compute(PotentialEnergy_Laplacian);
@@ -118,7 +138,9 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	ClassicalHamiltonian_Eigenstructure.compute(ClassicalEnergy_Hamiltonian);
 	ClassicalHamiltonian_Energy = ClassicalHamiltonian_Eigenstructure.eigenvalues();
 	ClassicalHamiltonian_EigenStates = ClassicalHamiltonian_Eigenstructure.eigenvectors();
-	ClassicalHamiltonian_Vacuum = ClassicalHamiltonian_EigenStates.col(num_points-1).cwiseProduct(ClassicalHamiltonian_EigenStates.col(num_points - 1));
+	// Calculating the "Entanglement Entropy" of Particles
+	ClassicalHamiltonian_EigenState_Probs = ClassicalHamiltonian_EigenStates.cwiseProduct(ClassicalHamiltonian_EigenStates);
+	ClassicalParticle_Entropy = -(ClassicalHamiltonian_EigenState_Probs.array()*ClassicalHamiltonian_EigenState_Probs.array().log()).rowwise().sum();
 
 	ClassicalHamiltonian_wVacuum_Eigenstructure.compute(ClassicalEnergy_Hamiltonian_wVacuum);
 	ClassicalHamiltonian_wVacuum_Energy = ClassicalHamiltonian_wVacuum_Eigenstructure.eigenvalues();
@@ -131,8 +153,9 @@ void Compute::Run(Interaction* interaction, double** positions, double** velocit
 	//GlobalEnergy_Exchange = CollectiveEnergy_Exchange(interaction, positions, velocities, num_points, dimension, ClassicalLaplacian_EigenStates);
 	Global_ClassicalVariables = Collective_Variables(interaction, positions, velocities, masses, num_points, dimension, ClassicalHamiltonian_wVacuum_EigenStates);
 
-	Tile_Fields = Tile_Interface->Run(Global_ClassicalVariables, num_points, dimension);
-	//
+	if (tile_flag)
+		Tile_Fields = Tile_Interface->Run(Global_ClassicalVariables, num_points, dimension);
+	
 
 	if (debug_flag)
 	{
@@ -659,6 +682,7 @@ Compute::Compute(int num_points, long num_scale_bins, int num_tilelayers, int pe
 	Laplacian_Multiplicity = new Multiplicity[num_scale_bins];
 
 	Vac = VectorXd::Constant(num_points, 1);
+	Vacuum_Operator = MatrixXd::Constant(num_points, num_points, 1);
 	Laplacian = new MatrixXd[num_scale_bins];
 
 	Tile_Interface = new WaveParticle_Interface(num_tilelayers);
@@ -705,7 +729,7 @@ int main()
 	bool error_calculation = false;
 
 	const long Number_Points = 6;
-	const long Dimension = 2;
+	const long Dimension = 3;
 
 	const long Number_Scale_Bins = Number_Points * Number_Points * 10;
 	const long Total_Time = 1;
